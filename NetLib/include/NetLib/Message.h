@@ -28,13 +28,13 @@ struct Message
 	}
 
 	template<typename DT>
-	friend Message<T>& operator << (Message<T>& msg, DT& data)
+	friend Message<T>& operator << (Message<T>& msg, const DT& data)
 	{
 		static_assert(std::is_standard_layout<DT>::value, "Data too complex");
 		size_t i = msg.Body.size();
 		msg.Body.resize(msg.Body.size() + sizeof(DT));
 		std::memcpy(msg.Body.data() + i, &data, sizeof(DT));
-		msg.Header.Size - msg.Size();
+		msg.Header.Size = msg.Size();
 		return msg;
 	}
 

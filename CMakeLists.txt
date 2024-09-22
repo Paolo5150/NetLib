@@ -19,3 +19,6 @@ target_include_directories(NetLib PRIVATE "${CMAKE_SOURCE_DIR}/NetLib/include")
 add_subdirectory ("Client")
 target_include_directories(Client PRIVATE "${CMAKE_SOURCE_DIR}/Dependencies/asio/include")
 
+add_subdirectory ("Server")
+target_include_directories(Server PRIVATE "${CMAKE_SOURCE_DIR}/Dependencies/asio/include")
+

@@ -1,49 +1,86 @@
 #include <iostream>
 #include <NetLib/Message.h>
 #include <NetLib/NetClient.h>
+#include <chrono>
 
 enum class MessageType : uint32_t
 {
-	FireBullet,
-	MovePlayer
+	Ping
 };
 
 class Customclient : public Client<MessageType>
 {
-public:
-	bool FireBullet(float x, float y)
+public: 
+	void Ping()
 	{
+		std::cout << "Pinging server\n";
 		Message<MessageType> msg;
-		msg.Header.ID = MessageType::FireBullet;
-		msg << x << y;
+		msg.Header.ID = MessageType::Ping;
+
+		std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
+		msg << timeNow;
+
 		Send(msg);
 	}
 };
 
 void main()
 {
-	Message<MessageType> msg;
-	msg.Header.ID = MessageType::FireBullet;
+	Customclient c;
+	c.Connect("127.0.0.1", 60000);
 
-	int a = 1;
-	bool b = true;
-	float c = 9.4;
+	bool key[3] = { 0,0,0 };
+	bool oldKey[3] = { 0,0,0 };
 
-	struct
+
+
+	bool quittime = false;
+	while (!quittime)
 	{
-		float x;
-		float y;
 
-	} d[5];
+		if (GetForegroundWindow() == GetConsoleWindow())
+		{
+			key[0] = GetAsyncKeyState('1') & 0x8000;
+			key[1] = GetAsyncKeyState('2') & 0x8000;
+			key[2] = GetAsyncKeyState('3') & 0x8000;
+		}
 
-	msg << a << b << c << d;
+		if (key[2] && !oldKey[2])
+		{
+			std::cout << "Pressed 3\n";
+			quittime = true;
+		}
+		if (key[0] && !oldKey[0])
+			c.Ping();
 
-	a = 13;
-	b = 0;
-	c = 923.4;
+		for (int i = 0; i < 3; i++)
+			oldKey[i] = key[i];
 
-	msg >> d >> c >> b >> a;
-
-	std::cout << a << b << c << d;
+		if (c.IsConnected())
+		{
+			if (!c.GetMessages().Empty())
+			{
+				auto msg = c.GetMessages().PopFront().TheMessage;
+				switch (msg.Header.ID)
+				{
+				case MessageType::Ping:
+				{
+					std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
+					std::chrono::system_clock::time_point timeThen;
+					msg >> timeThen;
+					std::cout << "Ping: " << std::chrono::duration<double>(timeNow - timeThen).count() << "\n";
+				}
+					break;
+				default:
+					break;
+				}
+			}
+		}
+		else
+		{
+			std::cout << "Server down, bye\n";
+			quittime = true;
+		}
+	}
 
 }
