@@ -1,10 +1,10 @@
 #pragma once
 #include <iostream>
-#include "Message.h"
+#include "TCPMessage.h"
 #include "TSQueue.h"
 
 template <class T>
-class Connection : public std::enable_shared_from_this<Connection<T>>
+class TCPConnection : public std::enable_shared_from_this<TCPConnection<T>>
 {
 public:
 	enum class Owner
@@ -13,7 +13,7 @@ public:
 		ClientOwner
 	};
 
-	Connection(Owner parent, asio::io_context& context, asio::ip::tcp::socket socket, TSQueue<OwnedMessage<T>>& in) :
+	TCPConnection(Owner parent, asio::io_context& context, asio::ip::tcp::socket socket, TSQueue<OwnedTCPMessage<T>>& in) :
 		m_inMessagesQ(in),
 		m_socket(std::move(socket)),
 		m_asioContext(context),
@@ -21,7 +21,9 @@ public:
 
 	{
 	}
-	virtual ~Connection(){}
+	virtual ~TCPConnection(){
+		m_socket.close();
+	}
 
 	void ConnectToServer(const asio::ip::tcp::resolver::results_type& endpoints) 
 	{
@@ -66,7 +68,7 @@ public:
 	{
 		return m_socket.is_open();
 	}
-	void Send(const Message<T>& msg) 
+	void Send(const TCPMessage<T>& msg) 
 	{
 		asio::post(m_asioContext, [this, msg]() {
 			bool isWriting = !m_outMEssagesQ.Empty();
@@ -86,15 +88,15 @@ protected:
 
 	asio::io_context& m_asioContext;
 	Owner m_owner;
-	TSQueue<Message<T>> m_outMEssagesQ;
-	TSQueue<OwnedMessage<T>>& m_inMessagesQ;
-	Message<T> m_temporaryInMsg;
+	TSQueue<TCPMessage<T>> m_outMEssagesQ;
+	TSQueue<OwnedTCPMessage<T>>& m_inMessagesQ;
+	TCPMessage<T> m_temporaryInMsg;
 	uint32_t m_id = 0;
 
 private:
 	void ReadHeader()
 	{
-		asio::async_read(m_socket, asio::buffer(&m_temporaryInMsg.Header, sizeof(MessageHeader<T>)), 
+		asio::async_read(m_socket, asio::buffer(&m_temporaryInMsg.Header, sizeof(TCPMessageHeader<T>)), 
 			[this](std::error_code ec, std::size_t length) {
 
 				if (!ec)
@@ -103,7 +105,7 @@ private:
 					{
 						//std::cout << "body size should be " << (m_temporaryInMsg.Header.Size - sizeof(MessageHeader<T>)) << "\n";
 
-						m_temporaryInMsg.Body.resize(m_temporaryInMsg.Header.Size - sizeof(MessageHeader<T>));
+						m_temporaryInMsg.Body.resize(m_temporaryInMsg.Header.Size - sizeof(TCPMessageHeader<T>));
 
 						ReadBody();
 					}
@@ -142,7 +144,7 @@ private:
 	{
 		if (m_owner == Owner::ServerOwner)
 		{
-			OwnedMessage<T> om;
+			OwnedTCPMessage<T> om;
 			om.Remote = this->shared_from_this();
 			om.TheMessage = m_temporaryInMsg;
 			
@@ -158,7 +160,7 @@ private:
 
 	void WriteHeader()
 	{
-		asio::async_write(m_socket, asio::buffer(&m_outMEssagesQ.Front().Header, sizeof(MessageHeader<T>)),
+		asio::async_write(m_socket, asio::buffer(&m_outMEssagesQ.Front().Header, sizeof(TCPMessageHeader<T>)),
 			[this](std::error_code ec, std::size_t length) {
 				if (!ec)
 				{

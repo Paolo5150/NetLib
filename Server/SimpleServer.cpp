@@ -1,30 +1,33 @@
 #include <iostream>
-#include <NetLib/Message.h>
-#include <NetLib/NetServer.h>
+#include <NetLib/TCPMessage.h>
+#include <NetLib/TCPServer.h>
 
 enum class MessageType : uint32_t
 {
 	Ping
 };
 
-class CustomServer : public Server<MessageType>
+class CustomServer : public TCPServer<MessageType>
 {
 public:
-	CustomServer(uint16_t port) : Server<MessageType>(port)
+	CustomServer(uint16_t port) : TCPServer<MessageType>(port)
 	{
 
 	}
 
-	bool OnClientConnection(std::shared_ptr <Connection<MessageType>> client) override
+	bool OnClientConnection(std::shared_ptr <TCPConnection<MessageType>> client) override
 	{
+		std::cout << "Client ID " << client->GetID() << " Connected\n";
 		return true;
 	}
 
-	void OnClientDisconnection(std::shared_ptr < Connection<MessageType>> client) override
+	void OnClientDisconnection(std::shared_ptr < TCPConnection<MessageType>> client) override
 	{
+		std::cout << "Client ID " << client->GetID() << " disconnected\n";
+
 	}
 
-	void OnMessage(std::shared_ptr<Connection<MessageType>> client, const Message<MessageType>& msg)
+	void OnMessage(std::shared_ptr<TCPConnection<MessageType>> client, const TCPMessage<MessageType>& msg)
 	{
 		switch (msg.Header.ID)
 		{

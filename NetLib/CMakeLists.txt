@@ -3,7 +3,7 @@
 #
 
 # Add source to this project's executable.
-add_executable (NetLib   "src/Example.cpp" "include/NetLib/TSQueue.h" "include/NetLib/Message.h" "include/NetLib/NetConnection.h" "include/NetLib/NetServer.h" "include/NetLib/NetClient.h")
+add_executable (NetLib    "include/NetLib/TSQueue.h" "include/NetLib/TCPMessage.h" "include/NetLib/TCPConnection.h" "include/NetLib/TCPServer.h" "include/NetLib/TCPClient.h")
 
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)

@@ -1,6 +1,6 @@
 #include <iostream>
-#include <NetLib/Message.h>
-#include <NetLib/NetClient.h>
+#include <NetLib/TCPMessage.h>
+#include <NetLib/TCPClient.h>
 #include <chrono>
 
 enum class MessageType : uint32_t
@@ -8,13 +8,13 @@ enum class MessageType : uint32_t
 	Ping
 };
 
-class Customclient : public Client<MessageType>
+class Customclient : public TCPClient<MessageType>
 {
 public: 
 	void Ping()
 	{
 		std::cout << "Pinging server\n";
-		Message<MessageType> msg;
+		TCPMessage<MessageType> msg;
 		msg.Header.ID = MessageType::Ping;
 
 		std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();

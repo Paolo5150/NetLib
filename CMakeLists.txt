@@ -12,9 +12,9 @@ endif()
 project ("NetLib")
 
 # Include sub-projects.
-add_subdirectory ("NetLib")
-target_include_directories(NetLib PRIVATE "${CMAKE_SOURCE_DIR}/Dependencies/asio/include")
-target_include_directories(NetLib PRIVATE "${CMAKE_SOURCE_DIR}/NetLib/include")
+# add_subdirectory ("NetLib")
+# target_include_directories(NetLib PRIVATE "${CMAKE_SOURCE_DIR}/Dependencies/asio/include")
+# target_include_directories(NetLib PRIVATE "${CMAKE_SOURCE_DIR}/NetLib/include")
 
 add_subdirectory ("Client")
 target_include_directories(Client PRIVATE "${CMAKE_SOURCE_DIR}/Dependencies/asio/include")

@@ -1,19 +1,19 @@
 #pragma once
-#include "Message.h"
+#include "TCPMessage.h"
 #include "TSQueue.h"
-#include "NetConnection.h"
+#include "TCPConnection.h"
 
 template<class T>
-class Server
+class TCPServer
 {
 public:
-	Server(uint16_t port) :
+	TCPServer(uint16_t port) :
 		m_asioAcceptor(m_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
 	{
 
 	}
 
-	virtual ~Server()
+	virtual ~TCPServer()
 	{
 		Stop();
 	}
@@ -51,7 +51,7 @@ public:
 			if (!ec)
 			{
 				std::cout << "[Server] New Connection: " << socket.remote_endpoint() << std::endl;
-				std::shared_ptr<Connection<T>> neWcon = std::make_shared<Connection<T>>(Connection<T>::Owner::ServerOwner, m_context, std::move(socket), m_inMessages);
+				std::shared_ptr<TCPConnection<T>> neWcon = std::make_shared<TCPConnection<T>>(TCPConnection<T>::Owner::ServerOwner, m_context, std::move(socket), m_inMessages);
 				if (OnClientConnection(neWcon))
 				{
 					m_connections.push_back(std::move(neWcon));
@@ -75,7 +75,7 @@ public:
 			});
 	}
 
-	void MessageClient(std::shared_ptr<Connection<T>> client, const Message<T>& msg)
+	void MessageClient(std::shared_ptr<TCPConnection<T>> client, const TCPMessage<T>& msg)
 	{
 		if (client && client->IsConnected())
 		{
@@ -89,7 +89,7 @@ public:
 		}
 	}
 
-	void MessageAllClients(const Message<T>& msg, std::shared_ptr<Connection<T>> ignoreClient = nullptr)
+	void MessageAllClients(const TCPMessage<T>& msg, std::shared_ptr<TCPConnection<T>> ignoreClient = nullptr)
 	{
 		bool foundInvalid = false;
 		for (auto& client : m_connections)
@@ -126,22 +126,22 @@ public:
 	}
 
 protected:
-	virtual bool OnClientConnection(std::shared_ptr <Connection<T>> client)
+	virtual bool OnClientConnection(std::shared_ptr <TCPConnection<T>> client)
 	{
 		return false;
 	}
 
-	virtual void OnClientDisconnection(std::shared_ptr <Connection<T>> client)
+	virtual void OnClientDisconnection(std::shared_ptr <TCPConnection<T>> client)
 	{
 	}
 
-	virtual void OnMessage(std::shared_ptr<Connection<T>> client, const Message<T>& msg)
+	virtual void OnMessage(std::shared_ptr<TCPConnection<T>> client, const TCPMessage<T>& msg)
 	{
 
 	}
 
-	std::deque<std::shared_ptr<Connection<T>>> m_connections;
-	TSQueue < OwnedMessage<T>> m_inMessages;
+	std::deque<std::shared_ptr<TCPConnection<T>>> m_connections;
+	TSQueue < OwnedTCPMessage<T>> m_inMessages;
 	asio::io_context m_context;
 	std::thread m_contextThread;
 	asio::ip::tcp::acceptor m_asioAcceptor;

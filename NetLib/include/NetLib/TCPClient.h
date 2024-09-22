@@ -1,20 +1,20 @@
 #pragma once
-#include "Message.h"
+#include "TCPMessage.h"
 #include "asio.hpp"
 #include "TSQueue.h"
-#include "NetConnection.h"
+#include "TCPConnection.h"
 #include <thread>
 
 template<class T>
-class Client : std::enable_shared_from_this<Client<T>>
+class TCPClient : std::enable_shared_from_this<TCPClient<T>>
 {
 public:
-	Client() : m_socket(m_context)
+	TCPClient() : m_socket(m_context)
 	{
 
 	}
 
-	virtual ~Client()
+	virtual ~TCPClient()
 	{
 		Disconnect();
 	}
@@ -26,8 +26,8 @@ public:
 			asio::ip::tcp::resolver res(m_context);
 			auto endpoints = res.resolve(host, std::to_string(port));
 
-			m_connection = std::make_unique<Connection<T>>(
-				Connection<T>::Owner::ClientOwner,
+			m_connection = std::make_unique<TCPConnection<T>>(
+				TCPConnection<T>::Owner::ClientOwner,
 				m_context,
 				asio::ip::tcp::socket(m_context),
 				m_inMessages);
@@ -68,7 +68,7 @@ public:
 		return false;
 	}
 
-	void Send(const Message<T>& msg)
+	void Send(const TCPMessage<T>& msg)
 	{
 		if (IsConnected())
 		{
@@ -77,7 +77,7 @@ public:
 		}
 	}
 
-	TSQueue<OwnedMessage<T>>& GetMessages()
+	TSQueue<OwnedTCPMessage<T>>& GetMessages()
 	{
 		return m_inMessages;
 	}
@@ -85,8 +85,8 @@ protected:
 	asio::io_context m_context;
 	std::thread m_contextThread;
 	asio::ip::tcp::socket m_socket;
-	std::unique_ptr<Connection<T>> m_connection;
+	std::unique_ptr<TCPConnection<T>> m_connection;
 
 private:
-	TSQueue<OwnedMessage<T>> m_inMessages;
+	TSQueue<OwnedTCPMessage<T>> m_inMessages;
 };

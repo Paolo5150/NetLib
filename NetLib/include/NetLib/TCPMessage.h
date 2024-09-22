@@ -4,31 +4,31 @@
 #include <asio.hpp>
 
 template<typename T>
-struct MessageHeader
+struct TCPMessageHeader
 {
 	T ID{};
 	uint32_t Size = 0;
 };
 
 template<typename T>
-struct Message
+struct TCPMessage
 {
-	MessageHeader<T> Header;
+	TCPMessageHeader<T> Header;
 	std::vector<uint8_t> Body;
 
 	size_t Size() const
 	{
-		return sizeof(MessageHeader<T>) + Body.size();
+		return sizeof(TCPMessageHeader<T>) + Body.size();
 	}
 
-	friend std::ostream& operator << (std::ostream& stream, const Message<T>& msg)
+	friend std::ostream& operator << (std::ostream& stream, const TCPMessage<T>& msg)
 	{
 		stream << "ID: " << static_cast<int>(msg.Header.ID) << " Size: " << msg.Header.Size;
 		return stream;
 	}
 
 	template<typename DT>
-	friend Message<T>& operator << (Message<T>& msg, const DT& data)
+	friend TCPMessage<T>& operator << (TCPMessage<T>& msg, const DT& data)
 	{
 		static_assert(std::is_standard_layout<DT>::value, "Data too complex");
 		size_t i = msg.Body.size();
@@ -39,7 +39,7 @@ struct Message
 	}
 
 	template<typename DT>
-	friend Message<T>& operator >> (Message<T>& msg, DT& data)
+	friend TCPMessage<T>& operator >> (TCPMessage<T>& msg, DT& data)
 	{
 		static_assert(std::is_standard_layout<DT>::value, "Data too complex");
 		size_t i = msg.Body.size() - sizeof(DT);
@@ -51,15 +51,15 @@ struct Message
 };
 
 template<typename T>
-struct Connection;
+struct TCPConnection;
 
 template<typename T>
-struct OwnedMessage
+struct OwnedTCPMessage
 {
-	std::shared_ptr<Connection<T>> Remote = nullptr;
-	Message<T> TheMessage;
+	std::shared_ptr<TCPConnection<T>> Remote = nullptr;
+	TCPMessage<T> TheMessage;
 
-	friend std::ostream& operator <<(std::ostream& os, const OwnedMessage<T>& msg)
+	friend std::ostream& operator <<(std::ostream& os, const OwnedTCPMessage<T>& msg)
 	{
 		os << msg.TheMessage;
 		return os;
