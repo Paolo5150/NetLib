@@ -17,7 +17,8 @@ public:
 	{
 	}
 
-	virtual ~TCPServerClientConnection() {
+	virtual ~TCPServerClientConnection() 
+	{
 	}
 
 	void ConnectToClient(uint32_t id)

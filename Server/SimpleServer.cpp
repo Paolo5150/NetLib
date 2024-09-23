@@ -1,6 +1,7 @@
 #include <iostream>
 #include <NetLib/TCPMessage.h>
 #include <NetLib/TCPServer.h>
+#include <NetLib/UDPReceiver.h>
 
 enum class MessageType : uint32_t
 {
@@ -56,14 +57,31 @@ public:
 	}
 };
 
+
+class CustomUDPReceiver : UDPReceiver<MessageType>
+{
+public:
+	CustomUDPReceiver( uint16_t port) :
+		UDPReceiver( port)
+	{
+
+	}
+
+
+};
+
 void main()
 {
 	CustomServer s(60000);
 	s.Start();
+
+	//CustomUDPReceiver c(50000);
 	while (1)
 	{
 		s.Update();
 	}
 
+
+	//CustomUDPSender c("127.0.0.1", 60000);
 
 }
