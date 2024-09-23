@@ -3,68 +3,23 @@
 #include "TCPMessage.h"
 #include "TSQueue.h"
 #include <functional>
+
 template <class T>
-class TCPConnection : public std::enable_shared_from_this<TCPConnection<T>>
+class TCPConnection
 {
 public:
-	enum class Owner
-	{
-		ServerOwner,
-		ClientOwner
-	};
 
-	TCPConnection(Owner parent, asio::io_context& context, asio::ip::tcp::socket socket, TSQueue<OwnedTCPMessage<T>>& in) :
-		m_inMessagesQ(in),
+	TCPConnection(asio::io_context& context, asio::ip::tcp::socket socket) :
 		m_socket(std::move(socket)),
-		m_asioContext(context),
-		m_owner(parent)
+		m_asioContext(context)
 
 	{
 	}
-	virtual ~TCPConnection(){
+	virtual ~TCPConnection() {
 		m_socket.close();
 	}
 
-	void ConnectToServerAsync(const asio::ip::tcp::resolver::results_type& endpoints, 
-		const std::function<void()>& onSuccess,
-		const std::function<void()>& onFail
-		)
-	{
-		if (m_owner == Owner::ClientOwner)
-		{
-			asio::async_connect(m_socket, endpoints, [this, onSuccess, onFail](std::error_code ec, asio::ip::tcp::endpoint endpoint) {
-
-				if (!ec)
-				{
-					if (onSuccess)
-						onSuccess();
-					ReadHeader();
-				}
-				else
-				{
-					std::cout << "[Client] Failed to connect to server: " << ec.message() << std::endl;
-					if (onFail)
-						onFail();
-				}
-				});
-		}
-
-	}
-
-
-	void ConnectToClient(uint32_t id)
-	{
-		if (m_owner == Owner::ServerOwner)
-		{
-			if (m_socket.is_open())
-			{
-				m_id = id;
-				ReadHeader();
-			}
-		}
-
-	}
-	void Disconnect() 
+	void Disconnect()
 	{
 		if (IsConnected())
 		{
@@ -73,71 +28,62 @@ public:
 				});
 		}
 	}
+
 	bool IsConnected()
 	{
 		return m_socket.is_open();
 	}
-	void Send(const TCPMessage<T>& msg) 
+
+	void Send(const TCPMessage<T>& msg)
 	{
 		asio::post(m_asioContext, [this, msg]() {
 			bool isWriting = !m_outMEssagesQ.Empty();
 
 			m_outMEssagesQ.PushBack(msg);
 			if (!isWriting)
-			{
 				WriteHeader();
-
-			}
 			});
-	}
-	void SetOnErrorCallback(const std::function<void(int, std::shared_ptr < TCPConnection<T>>)>& cb)
-	{
-		m_onError = cb;
 	}
 
 	uint32_t GetID() { return m_id; }
 
+	std::string GetEndpointInfo()
+	{
+		std::stringstream ss;
+		ss << m_socket.remote_endpoint();
+		return ss.str();
+	}
+
 protected:
 	asio::ip::tcp::socket m_socket;
-
 	asio::io_context& m_asioContext;
-	Owner m_owner;
 	TSQueue<TCPMessage<T>> m_outMEssagesQ;
-	TSQueue<OwnedTCPMessage<T>>& m_inMessagesQ;
 	TCPMessage<T> m_temporaryInMsg;
 	uint32_t m_id = 0;
-	std::function<void(int, std::shared_ptr<TCPConnection<T>>)> m_onError;
 
-private:
 	void ReadHeader()
 	{
-		asio::async_read(m_socket, asio::buffer(&m_temporaryInMsg.Header, sizeof(TCPMessageHeader<T>)), 
+		asio::async_read(m_socket, asio::buffer(&m_temporaryInMsg.Header, sizeof(TCPMessageHeader<T>)),
 			[this](std::error_code ec, std::size_t length) {
 
 				if (!ec)
 				{
 					if (m_temporaryInMsg.Header.Size > 0)
 					{
-						//std::cout << "body size should be " << (m_temporaryInMsg.Header.Size - sizeof(MessageHeader<T>)) << "\n";
-
 						m_temporaryInMsg.Body.resize(m_temporaryInMsg.Header.Size - sizeof(TCPMessageHeader<T>));
-
 						ReadBody();
 					}
 					else
-					{
 						AddToIncomingMessageQueue();
-					}
 				}
 				else
 				{
 					std::cout << "Read header failed! ID: " << m_id << " " << ec.value() << " " << ec.message() << "\n";
 					m_socket.close();
-					if (m_onError)
-						m_onError(ec.value(), this->shared_from_this());
 				}
 			});
 	}
+private:
 
 	void ReadBody()
 	{
@@ -145,37 +91,20 @@ private:
 			[this](std::error_code ec, std::size_t length)
 			{
 				if (!ec)
-				{
 					AddToIncomingMessageQueue();
-				}
 				else
 				{
-					// As above!
 					std::cout << "[" << m_id << "] Read Body Fail.\n";
 					m_socket.close();
-					if (m_onError)
-						m_onError(ec.value(), this->shared_from_this());
 				}
+					
 			});
 	}
-
-	void AddToIncomingMessageQueue()
-	{
-		if (m_owner == Owner::ServerOwner)
-		{
-			OwnedTCPMessage<T> om;
-			om.Remote = this->shared_from_this();
-			om.TheMessage = m_temporaryInMsg;
-			
-			m_inMessagesQ.PushBack(om);
-		}
-		else
-		{
-			m_inMessagesQ.PushBack({ nullptr, m_temporaryInMsg });
-		}
-
-		ReadHeader();
-	}
+	/**
+	* Server and client connections have different message queue types, so each implement its own version of this method
+	* The method must call ReadHeader to initiate a subsequent reading, after the message has been moved to the incoming queue
+	*/
+	virtual void AddToIncomingMessageQueue() = 0;
 
 	void WriteHeader()
 	{
@@ -191,8 +120,7 @@ private:
 					{
 						m_outMEssagesQ.PopFront();
 						if (!m_outMEssagesQ.Empty())
-							WriteHeader();
-						
+							WriteHeader();						
 					}
 				}
 				else
@@ -200,8 +128,6 @@ private:
 					// As above!
 					std::cout << "Write header failed! ID: " << m_id << "\n";
 					m_socket.close();
-					if (m_onError)
-						m_onError(ec.value(), this->shared_from_this());
 				}
 			});
 	}
@@ -227,8 +153,6 @@ private:
 					// Sending failed, see WriteHeader() equivalent for description :P
 					std::cout << "Write body failed! ID: " << m_id << "\n";
 					m_socket.close();
-					if (m_onError)
-						m_onError(ec.value(), this->shared_from_this());
 				}
 			});
 	}

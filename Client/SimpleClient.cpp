@@ -83,7 +83,7 @@ void main()
 		{
 			if (!c.GetMessages().Empty())
 			{
-				auto msg = c.GetMessages().PopFront().TheMessage;
+				auto msg = c.GetMessages().PopFront();
 				switch (msg.Header.ID)
 				{
 				case MessageType::Ping:

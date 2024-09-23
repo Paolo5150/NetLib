@@ -2,7 +2,7 @@
 #include "TCPMessage.h"
 #include "asio.hpp"
 #include "TSQueue.h"
-#include "TCPConnection.h"
+#include "TCPClientServerConnection.h"
 #include <thread>
 
 template<class T>
@@ -33,12 +33,10 @@ public:
 			asio::ip::tcp::resolver res(m_context);
 			auto endpoints = res.resolve(host, std::to_string(port));
 
-			m_connection = std::make_unique<TCPConnection<T>>(
-				TCPConnection<T>::Owner::ClientOwner,
+			m_connection = std::make_unique<TCPClientServerConnection<T>>(
 				m_context,
 				asio::ip::tcp::socket(m_context),
 				m_inMessages);
-
 
 			m_connection->ConnectToServerAsync(endpoints, 	
 				[this]() {	OnConnectionSuccessful();},
@@ -89,7 +87,7 @@ public:
 	virtual void OnConnectionFail()
 	{}
 
-	TSQueue<OwnedTCPMessage<T>>& GetMessages()
+	TSQueue<TCPMessage<T>>& GetMessages()
 	{
 		return m_inMessages;
 	}
@@ -97,8 +95,8 @@ protected:
 	asio::io_context m_context;
 	std::thread m_contextThread;
 	asio::ip::tcp::socket m_socket;
-	std::unique_ptr<TCPConnection<T>> m_connection;
+	std::unique_ptr<TCPClientServerConnection<T>> m_connection;
 
 private:
-	TSQueue<OwnedTCPMessage<T>> m_inMessages;
+	TSQueue<TCPMessage<T>> m_inMessages;
 };

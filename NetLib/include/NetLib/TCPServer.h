@@ -1,7 +1,7 @@
 #pragma once
 #include "TCPMessage.h"
 #include "TSQueue.h"
-#include "TCPConnection.h"
+#include "TCPServerClientConnection.h"
 
 template<class T>
 class TCPServer
@@ -10,7 +10,6 @@ public:
 	TCPServer(uint16_t port) :
 		m_asioAcceptor(m_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
 	{
-
 	}
 
 	virtual ~TCPServer()
@@ -51,36 +50,17 @@ public:
 			if (!ec)
 			{
 				std::cout << "[Server] New Connection: " << socket.remote_endpoint() << std::endl;
-				std::shared_ptr<TCPConnection<T>> neWcon = std::make_shared<TCPConnection<T>>(TCPConnection<T>::Owner::ServerOwner, m_context, std::move(socket), m_inMessages);
+				std::shared_ptr<TCPServerClientConnection<T>> neWcon = std::make_shared<TCPServerClientConnection<T>>(m_context, std::move(socket), m_inMessages);
 				
 				if (OnClientConnection(neWcon, m_clientIDCounter))
 				{
 					m_connections.push_back(std::move(neWcon));
 					m_connections.back()->ConnectToClient(m_clientIDCounter);
-					m_connections.back()->SetOnErrorCallback([this](int errorCode, std::shared_ptr < TCPConnection<T>> client) {
-
-						std::cout << "[Server] Received error: " << errorCode << "\n";
-
-						switch (errorCode)
-						{
-							case 10054: //Client disconnected
-								OnClientDisconnection(client);
-								m_connections.erase(std::remove(m_connections.begin(), m_connections.end(), client), m_connections.end());
-								break;
-
-						default:
-							break;
-						}
-						});
 					m_clientIDCounter++;
 					std::cout << "[Server] Connection approved by server\n";
-				
 				}
 				else
-				{
 					std::cout << "[Server] Connection refused by server\n";
-				
-				}
 			}
 			else
 			{
@@ -91,7 +71,7 @@ public:
 			});
 	}
 
-	void MessageClient(std::shared_ptr<TCPConnection<T>> client, const TCPMessage<T>& msg)
+	void MessageClient(std::shared_ptr<TCPServerClientConnection<T>> client, const TCPMessage<T>& msg)
 	{
 		if (client && client->IsConnected())
 		{
@@ -105,7 +85,7 @@ public:
 		}
 	}
 
-	void MessageAllClients(const TCPMessage<T>& msg, std::shared_ptr<TCPConnection<T>> ignoreClient = nullptr)
+	void MessageAllClients(const TCPMessage<T>& msg, std::shared_ptr<TCPServerClientConnection<T>> ignoreClient = nullptr)
 	{
 		bool foundInvalid = false;
 		for (auto& client : m_connections)
@@ -148,22 +128,22 @@ protected:
 	* @param client The pointer to the client connection
 	* @param assigned ID The artificial ID assigned to the client, should the connection be accepted
 	*/
-	virtual bool OnClientConnection(std::shared_ptr <TCPConnection<T>> client, uint32_t assignedID)
+	virtual bool OnClientConnection(std::shared_ptr <TCPServerClientConnection<T>> client, uint32_t assignedID)
 	{
 		return false;
 	}
 
-	virtual void OnClientDisconnection(std::shared_ptr <TCPConnection<T>> client)
+	virtual void OnClientDisconnection(std::shared_ptr <TCPServerClientConnection<T>> client)
 	{
 	}
 
-	virtual void OnMessage(std::shared_ptr<TCPConnection<T>> client, const TCPMessage<T>& msg)
+	virtual void OnMessage(std::shared_ptr<TCPServerClientConnection<T>> client, const TCPMessage<T>& msg)
 	{
 
 	}
 
-	std::deque<std::shared_ptr<TCPConnection<T>>> m_connections;
-	TSQueue < OwnedTCPMessage<T>> m_inMessages;
+	std::deque<std::shared_ptr<TCPServerClientConnection<T>>> m_connections;
+	TSQueue <OwnedTCPMessage<T>> m_inMessages;
 	asio::io_context m_context;
 	std::thread m_contextThread;
 	asio::ip::tcp::acceptor m_asioAcceptor;
