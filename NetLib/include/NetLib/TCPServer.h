@@ -142,6 +142,12 @@ public:
 	}
 
 protected:
+	/**
+	* Invoked when a new client is connected.
+	* Must return true/false to determine whether the connection is to be accepted. Default is false.
+	* @param client The pointer to the client connection
+	* @param assigned ID The artificial ID assigned to the client, should the connection be accepted
+	*/
 	virtual bool OnClientConnection(std::shared_ptr <TCPConnection<T>> client, uint32_t assignedID)
 	{
 		return false;

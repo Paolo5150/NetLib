@@ -19,7 +19,14 @@ public:
 		Disconnect();
 	}
 
-	bool Connect(const std::string& host, const uint16_t port)
+	/**
+	* Async connection to specified host.
+	* Upon success or failure of connection, OnConnectionSuccessful() or OnConnectionFail() are called respectively.
+	* If failure, the context is stopped and everything is automatically disconnected, client only need to deal with custom clean up.
+	* @param host The address of the server
+	* @param port The server port
+	*/
+	void Connect(const std::string& host, const uint16_t port)
 	{
 		try
 		{
@@ -32,20 +39,20 @@ public:
 				asio::ip::tcp::socket(m_context),
 				m_inMessages);
 
-			m_connection->ConnectToServer(endpoints);
-			
 
+			m_connection->ConnectToServerAsync(endpoints, 	
+				[this]() {	OnConnectionSuccessful();},
+				[this]() {OnConnectionFail();}
+				);
 			m_contextThread = std::thread([this]() {m_context.run(); });
-			std::cout << "[Client]: Connected "  << "\n";
 
-			return true;
 		}
 		catch(std::exception& e)
 		{
 			std::cout << "[Client ERROR]: " << e.what() << "\n";
-			return false;
+			Disconnect();
+			OnConnectionFail();
 		}
-		return false;
 	}
 
 	void Disconnect()
@@ -73,9 +80,14 @@ public:
 		if (IsConnected())
 		{
 			m_connection->Send(msg);
-
 		}
 	}
+
+	virtual void OnConnectionSuccessful()
+	{}
+
+	virtual void OnConnectionFail()
+	{}
 
 	TSQueue<OwnedTCPMessage<T>>& GetMessages()
 	{

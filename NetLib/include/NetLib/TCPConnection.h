@@ -25,24 +25,33 @@ public:
 		m_socket.close();
 	}
 
-	void ConnectToServer(const asio::ip::tcp::resolver::results_type& endpoints) 
+	void ConnectToServerAsync(const asio::ip::tcp::resolver::results_type& endpoints, 
+		const std::function<void()>& onSuccess,
+		const std::function<void()>& onFail
+		)
 	{
 		if (m_owner == Owner::ClientOwner)
 		{
-			asio::async_connect(m_socket, endpoints, [this](std::error_code ec, asio::ip::tcp::endpoint endpoint) {
+			asio::async_connect(m_socket, endpoints, [this, onSuccess, onFail](std::error_code ec, asio::ip::tcp::endpoint endpoint) {
 
 				if (!ec)
 				{
+					if (onSuccess)
+						onSuccess();
 					ReadHeader();
 				}
 				else
 				{
 					std::cout << "[Client] Failed to connect to server: " << ec.message() << std::endl;
+					if (onFail)
+						onFail();
 				}
 				});
 		}
 
 	}
+
+
 	void ConnectToClient(uint32_t id)
 	{
 		if (m_owner == Owner::ServerOwner)

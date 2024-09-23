@@ -19,7 +19,7 @@ public:
 	bool OnClientConnection(std::shared_ptr <TCPConnection<MessageType>> client, uint32_t assignedID) override
 	{
 		std::cout << "Client ID " << assignedID << " Connected\n";
-		return true;
+		return false;
 	}
 
 	void OnClientDisconnection(std::shared_ptr < TCPConnection<MessageType>> client) override

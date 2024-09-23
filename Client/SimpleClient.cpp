@@ -11,7 +11,7 @@ enum class MessageType : uint32_t
 
 class Customclient : public TCPClient<MessageType>
 {
-public: 
+public:
 	void Ping()
 	{
 		std::cout << "Pinging server\n";
@@ -31,6 +31,17 @@ public:
 
 		Send(msg);
 	}
+
+	void OnConnectionSuccessful() override
+	{
+		std::cout << "Custom client, connection ok\n";
+	}
+
+	void OnConnectionFail() override
+	{
+
+	}
+
 };
 
 void main()
@@ -82,7 +93,7 @@ void main()
 					msg >> timeThen;
 					std::cout << "Ping: " << std::chrono::duration<double>(timeNow - timeThen).count() << "\n";
 				}
-					break;
+				break;
 
 				case MessageType::Text:
 				{
@@ -91,7 +102,7 @@ void main()
 					std::string t;
 					t.resize(msg.Body.size());
 					std::memcpy(t.data(), msg.Body.data(), msg.Body.size());
-					
+
 					std::cout << "Text: " << t << "\n";
 				}
 				break;
