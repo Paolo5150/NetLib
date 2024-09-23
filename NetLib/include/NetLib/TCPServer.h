@@ -52,11 +52,27 @@ public:
 			{
 				std::cout << "[Server] New Connection: " << socket.remote_endpoint() << std::endl;
 				std::shared_ptr<TCPConnection<T>> neWcon = std::make_shared<TCPConnection<T>>(TCPConnection<T>::Owner::ServerOwner, m_context, std::move(socket), m_inMessages);
-				if (OnClientConnection(neWcon))
+				
+				if (OnClientConnection(neWcon, m_clientIDCounter))
 				{
 					m_connections.push_back(std::move(neWcon));
-					m_connections.back()->ConnectToClient(m_clientIDCounter++);
-				
+					m_connections.back()->ConnectToClient(m_clientIDCounter);
+					m_connections.back()->SetOnErrorCallback([this](int errorCode, std::shared_ptr < TCPConnection<T>> client) {
+
+						std::cout << "[Server] Received error: " << errorCode << "\n";
+
+						switch (errorCode)
+						{
+							case 10054: //Client disconnected
+								OnClientDisconnection(client);
+								m_connections.erase(std::remove(m_connections.begin(), m_connections.end(), client), m_connections.end());
+								break;
+
+						default:
+							break;
+						}
+						});
+					m_clientIDCounter++;
 					std::cout << "[Server] Connection approved by server\n";
 				
 				}
@@ -126,7 +142,7 @@ public:
 	}
 
 protected:
-	virtual bool OnClientConnection(std::shared_ptr <TCPConnection<T>> client)
+	virtual bool OnClientConnection(std::shared_ptr <TCPConnection<T>> client, uint32_t assignedID)
 	{
 		return false;
 	}

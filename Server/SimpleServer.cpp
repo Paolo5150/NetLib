@@ -4,7 +4,8 @@
 
 enum class MessageType : uint32_t
 {
-	Ping
+	Ping,
+	Text
 };
 
 class CustomServer : public TCPServer<MessageType>
@@ -15,9 +16,9 @@ public:
 
 	}
 
-	bool OnClientConnection(std::shared_ptr <TCPConnection<MessageType>> client) override
+	bool OnClientConnection(std::shared_ptr <TCPConnection<MessageType>> client, uint32_t assignedID) override
 	{
-		std::cout << "Client ID " << client->GetID() << " Connected\n";
+		std::cout << "Client ID " << assignedID << " Connected\n";
 		return true;
 	}
 
@@ -35,7 +36,20 @@ public:
 		{
 			std::cout << "Got a ping\n";
 			client->Send(msg);
+			break;
 		}
+
+		case MessageType::Text:
+		{
+			std::string t = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+			TCPMessage<MessageType> newMsg;
+			newMsg.Header.ID = MessageType::Text;
+			
+			newMsg.SetData((void*)t.data(), sizeof(char) * t.size());
+			client->Send(newMsg);
+			break;
+		}
+		
 		default:
 			break;
 		}

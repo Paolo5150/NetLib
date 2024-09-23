@@ -5,7 +5,8 @@
 
 enum class MessageType : uint32_t
 {
-	Ping
+	Ping,
+	Text
 };
 
 class Customclient : public TCPClient<MessageType>
@@ -19,6 +20,14 @@ public:
 
 		std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
 		msg << timeNow;
+
+		Send(msg);
+	}
+
+	void Message()
+	{
+		TCPMessage<MessageType> msg;
+		msg.Header.ID = MessageType::Text;
 
 		Send(msg);
 	}
@@ -53,6 +62,9 @@ void main()
 		if (key[0] && !oldKey[0])
 			c.Ping();
 
+		if (key[1] && !oldKey[1])
+			c.Message();
+
 		for (int i = 0; i < 3; i++)
 			oldKey[i] = key[i];
 
@@ -71,6 +83,18 @@ void main()
 					std::cout << "Ping: " << std::chrono::duration<double>(timeNow - timeThen).count() << "\n";
 				}
 					break;
+
+				case MessageType::Text:
+				{
+					std::cout << "Text:\n";
+
+					std::string t;
+					t.resize(msg.Body.size());
+					std::memcpy(t.data(), msg.Body.data(), msg.Body.size());
+					
+					std::cout << "Text: " << t << "\n";
+				}
+				break;
 				default:
 					break;
 				}

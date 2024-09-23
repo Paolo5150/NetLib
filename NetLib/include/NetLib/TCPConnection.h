@@ -2,7 +2,7 @@
 #include <iostream>
 #include "TCPMessage.h"
 #include "TSQueue.h"
-
+#include <functional>
 template <class T>
 class TCPConnection : public std::enable_shared_from_this<TCPConnection<T>>
 {
@@ -81,6 +81,11 @@ public:
 			}
 			});
 	}
+	void SetOnErrorCallback(const std::function<void(int, std::shared_ptr < TCPConnection<T>>)>& cb)
+	{
+		m_onError = cb;
+	}
+
 	uint32_t GetID() { return m_id; }
 
 protected:
@@ -92,6 +97,7 @@ protected:
 	TSQueue<OwnedTCPMessage<T>>& m_inMessagesQ;
 	TCPMessage<T> m_temporaryInMsg;
 	uint32_t m_id = 0;
+	std::function<void(int, std::shared_ptr<TCPConnection<T>>)> m_onError;
 
 private:
 	void ReadHeader()
@@ -116,8 +122,10 @@ private:
 				}
 				else
 				{
-					std::cout << "Read header failed! ID: " << m_id << "\n";
+					std::cout << "Read header failed! ID: " << m_id << " " << ec.value() << " " << ec.message() << "\n";
 					m_socket.close();
+					if (m_onError)
+						m_onError(ec.value(), this->shared_from_this());
 				}
 			});
 	}
@@ -136,6 +144,8 @@ private:
 					// As above!
 					std::cout << "[" << m_id << "] Read Body Fail.\n";
 					m_socket.close();
+					if (m_onError)
+						m_onError(ec.value(), this->shared_from_this());
 				}
 			});
 	}
@@ -181,6 +191,8 @@ private:
 					// As above!
 					std::cout << "Write header failed! ID: " << m_id << "\n";
 					m_socket.close();
+					if (m_onError)
+						m_onError(ec.value(), this->shared_from_this());
 				}
 			});
 	}
@@ -206,6 +218,8 @@ private:
 					// Sending failed, see WriteHeader() equivalent for description :P
 					std::cout << "Write body failed! ID: " << m_id << "\n";
 					m_socket.close();
+					if (m_onError)
+						m_onError(ec.value(), this->shared_from_this());
 				}
 			});
 	}

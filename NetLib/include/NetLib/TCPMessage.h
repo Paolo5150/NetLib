@@ -27,6 +27,13 @@ struct TCPMessage
 		return stream;
 	}
 
+	void SetData(void* data, size_t dataSize)
+	{
+		Body.resize(dataSize);
+		std::memcpy(Body.data(), data, dataSize);
+		Header.Size = Size();
+	}
+
 	template<typename DT>
 	friend TCPMessage<T>& operator << (TCPMessage<T>& msg, const DT& data)
 	{
