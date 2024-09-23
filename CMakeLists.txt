@@ -22,3 +22,6 @@ target_include_directories(Client PRIVATE "${CMAKE_SOURCE_DIR}/Dependencies/asio
 add_subdirectory ("Server")
 target_include_directories(Server PRIVATE "${CMAKE_SOURCE_DIR}/Dependencies/asio/include")
 
+add_subdirectory ("Tests")
+target_include_directories(Tests PRIVATE "${CMAKE_SOURCE_DIR}/Dependencies/asio/include")
+

@@ -3,6 +3,7 @@
 #include <NetLib/TCPClient.h>
 #include <NetLib/UDPSender.h>
 #include <chrono>
+#include <sstream>
 
 enum class MessageType : uint32_t
 {
@@ -62,6 +63,9 @@ public:
 
 void main()
 {
+
+
+
 	//Customclient c;
 	//c.Connect("127.0.0.1", 60000);
 
@@ -83,16 +87,20 @@ void main()
 
 		if (key[2] && !oldKey[2])
 		{
-			std::cout << "Pressed 3\n";
+			//std::cout << "Pressed 3\n";
 			quittime = true;
 		}
 		if (key[0] && !oldKey[0])
 		{
-			std::cout << "Pressed 1\n";
+			//std::cout << "Pressed 1\n";
+			std::stringstream m;
+			for (int i = 0; i < 1490; i++)
+			{
+				m << 'a';
+			}
 
 			//c.Ping();
-			std::string m = "La patata della serena jung";
-			sender.SendData(m.data(), m.size() * sizeof(char));
+			sender.SendData(m.str().data(), m.str().size() * sizeof(char));
 		}
 
 		//if (key[1] && !oldKey[1])

@@ -4,7 +4,8 @@
 
 # Add source to this project's executable.
 add_executable (NetLib    "include/NetLib/TSQueue.h" "include/NetLib/TCPMessage.h" "include/NetLib/TCPConnection.h" "include/NetLib/TCPServer.h" "include/NetLib/TCPClient.h" 
-"include/NetLib/TCPClientServerConnection.h" "include/NetLib/TCPServerClientConnection.h" "include/NetLib/UDPSender.h")
+"include/NetLib/TCPClientServerConnection.h" "include/NetLib/TCPServerClientConnection.h" "include/NetLib/UDPSender.h" "include/NetLib/UDPPacket.h"
+"include/NetLib/UDPPacketAssembler.h")
 
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)

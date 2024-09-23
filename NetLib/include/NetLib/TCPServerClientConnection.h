@@ -41,7 +41,7 @@ private:
 		om.Remote = this->shared_from_this();
 		om.TheMessage = m_temporaryInMsg;
 		m_inMessagesQ.PushBack(om);
-		std::cout << "Got message from " << om.Remote->GetEndpointInfo();
+		//std::cout << "Got message from " << om.Remote->GetEndpointInfo() << "\n";
 		ReadHeader();
 	}
 

@@ -26,12 +26,18 @@ public:
 	{
 		std::unique_lock<std::mutex> l(m_mutex);
 		m_q.emplace_back(std::move(e));
+
+		std::unique_lock<std::mutex> l2(m_waitMtx);
+		m_cv.notify_one();
 	}
 
 	void PushFront(const T& e)
 	{
 		std::unique_lock<std::mutex> l(m_mutex);
 		m_q.emplace_front(std::move(e));
+
+		std::unique_lock<std::mutex> l2(m_waitMtx);
+		m_cv.notify_one();
 	}
 
 	size_t Size()
@@ -68,8 +74,20 @@ public:
 		return t;
 	}
 
+	void Wait()
+	{
+		std::unique_lock<std::mutex> l(m_waitMtx);
+		m_cv.wait(l, [this]() {
+
+			return !Empty(); 
+			});
+	}
+
 private:
 	std::mutex m_mutex;
 	std::deque<T> m_q;
+
+	std::condition_variable m_cv;
+	std::mutex m_waitMtx;
 
 };

@@ -30,7 +30,6 @@ public:
 			m_contextThread.join();
 	}
 
-
 	void Receive()
 	{
 		if (m_socket.is_open())

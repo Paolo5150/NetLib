@@ -112,6 +112,8 @@ public:
 
 	void Update(size_t maxMessages = -1)
 	{
+		m_inMessages.Wait(); //Unblocked when the queue has something in it
+
 		size_t messageCount = 0;
 		while (messageCount < maxMessages && !m_inMessages.Empty())
 		{

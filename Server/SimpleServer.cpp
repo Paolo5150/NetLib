@@ -42,7 +42,7 @@ public:
 
 		case MessageType::Text:
 		{
-			std::string t = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+			std::string t = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n";
 			TCPMessage<MessageType> newMsg;
 			newMsg.Header.ID = MessageType::Text;
 			
@@ -72,16 +72,15 @@ public:
 
 void main()
 {
-	CustomServer s(60000);
-	s.Start();
+	//CustomServer s(60000);
+	//s.Start();
 
-	//CustomUDPReceiver c(50000);
+	CustomUDPReceiver c(50000);
 	while (1)
 	{
-		s.Update();
+		//s.Update();
 	}
 
 
-	//CustomUDPSender c("127.0.0.1", 60000);
 
 }
