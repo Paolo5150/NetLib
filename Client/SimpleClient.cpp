@@ -52,20 +52,16 @@ public:
 	CustomUDPSender(const std::string& sendToAddress, uint16_t port) :
 		UDPSender(sendToAddress, port)
 	{
-
 	}
 
-	void SendData(void* data, size_t size)
+	void SendData(MessageType id, uint8_t* data, size_t size)
 	{
-		Send(data, size);
+		Send(id, data, size);
 	}
 };
 
 void main()
 {
-
-
-
 	//Customclient c;
 	//c.Connect("127.0.0.1", 60000);
 
@@ -100,7 +96,7 @@ void main()
 			}
 
 			//c.Ping();
-			sender.SendData(m.str().data(), m.str().size() * sizeof(char));
+			sender.SendData(MessageType::Text, (uint8_t*)m.str().data(), m.str().size() * sizeof(char));
 		}
 
 		//if (key[1] && !oldKey[1])

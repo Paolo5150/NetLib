@@ -8,7 +8,8 @@ static constexpr uint32_t MTULimit = 1500;
 template<typename T>
 struct UDPPacketHeader
 {
-	T ID{};
+	T MessageID{};
+	uint16_t PacketID = 0;
 	uint8_t PacketSequenceNumber = 0;
 	uint8_t PacketMaxSequenceNumbers = 0;
 };
@@ -23,6 +24,8 @@ struct UDPPacket
 	UDPPacket(const std::vector<uint8_t>& fullPacketData)
 	{
 		DataBuffer = fullPacketData;
+		auto h = ExtractHeader();
+		PacketSize = DataBuffer.size();
 	}
 
 	UDPPacket()
@@ -34,17 +37,21 @@ struct UDPPacket
 	{
 		return MTULimit - sizeof(UDPPacketHeader<T>);
 	}
+
+	size_t GetPayloadSize()
+	{
+		return DataBuffer.size() - sizeof(UDPPacketHeader<T>);
+	}
 	
-	void SetHeader(T id,  uint8_t packetSequence, uint8_t packetMaxSequence)
+	void SetHeader( T id, uint16_t packetID,  uint8_t packetSequence, uint8_t packetMaxSequence)
 	{
 		UDPPacketHeader<T> header;
-		header.ID = id;
+		header.MessageID = id;
+		header.PacketID = packetID;
 		header.PacketSequenceNumber = packetSequence;
 		header.PacketMaxSequenceNumbers = packetMaxSequence;
-
 		std::memcpy(DataBuffer.data(), &header, sizeof(UDPPacketHeader<T>));
 		m_headerSet = true;
-
 	}
 
 	UDPPacketHeader<T> ExtractHeader()
@@ -63,7 +70,7 @@ struct UDPPacket
 		return pl;
 	}
 
-	void SetPayload(void* data, size_t dataSize)
+	void SetPayload(uint8_t* data, size_t dataSize)
 	{ 
 		if (!m_headerSet)
 			throw std::runtime_error("Header must be set first");

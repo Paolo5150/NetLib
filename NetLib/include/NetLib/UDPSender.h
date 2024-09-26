@@ -1,6 +1,6 @@
 #include <asio.hpp>
 #include "UDPPacket.h"
-
+#include "UDPPacketAssembler.h"
 template<class T>
 class UDPSender
 {
@@ -26,20 +26,22 @@ public:
 
 	~UDPSender()
 	{
-		
 		Destroy();
 	}
 
-
-	void Send(void* data, uint32_t size)
+	void Send(T id, const std::vector<uint8_t>& data)
 	{
-		auto maxBodySize = UDPPacket<T>::GetMaxBodySize();
-		uint16_t numOfPackets = (size / maxBodySize) + (size % maxBodySize != 0 ? 1 : 0);
+		Send(data.data(), data.size());
+	}
 
-		for (int i = 0; i < numOfPackets; i++)
+
+	void Send(T id, uint8_t* data, uint32_t size)
+	{
+		auto packets = m_packetAssembler.CreatePackets(id, data, size);
+
+		for (auto& p : packets)
 		{
-			//Assemble full message, with body
-			m_socket.async_send_to(asio::buffer(data, size), m_endpoint,
+			m_socket.async_send_to(asio::buffer(p.DataBuffer, p.DataBuffer.size()), m_endpoint,
 				[this](std::error_code ec, std::size_t bytes_sent) {
 
 					if (!ec)
@@ -53,7 +55,6 @@ public:
 					}
 				});
 		}
-		
 
 		//auto sent = m_socket.send_to(asio::buffer(data, size), m_endpoint);
 		//std::cout << "Sent " << sent << "\n";
@@ -73,5 +74,7 @@ private:
 	std::thread m_contextThread;
 	asio::ip::udp::socket m_socket;
 	asio::ip::udp::endpoint m_endpoint;
+	UDPPacketAssembler<T> m_packetAssembler;
+	uint16_t m_packetIDCounter = 0;
 
 };

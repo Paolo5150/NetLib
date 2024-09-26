@@ -11,7 +11,6 @@ public:
 		try
 		{
 			m_socket.bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), port));
-
 			m_contextThread = std::thread([this]() {m_context.run(); });
 			Receive();
 		}
@@ -52,11 +51,9 @@ public:
 					Receive();
 
 				});
-
-
 		}
 		
-
+		//Sync version
 		//auto sent = m_socket.send_to(asio::buffer(data, size), m_endpoint);
 		//std::cout << "Sent " << sent << "\n";
 	}
