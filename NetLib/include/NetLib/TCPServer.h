@@ -1,5 +1,5 @@
 #pragma once
-#include "TCPMessage.h"
+#include "NetMessage.h"
 #include "TSQueue.h"
 #include "TCPServerClientConnection.h"
 
@@ -71,7 +71,7 @@ public:
 			});
 	}
 
-	void MessageClient(std::shared_ptr<TCPServerClientConnection<T>> client, const TCPMessage<T>& msg)
+	void MessageClient(std::shared_ptr<TCPServerClientConnection<T>> client, const NetMessage<T>& msg)
 	{
 		if (client && client->IsConnected())
 		{
@@ -85,7 +85,7 @@ public:
 		}
 	}
 
-	void MessageAllClients(const TCPMessage<T>& msg, std::shared_ptr<TCPServerClientConnection<T>> ignoreClient = nullptr)
+	void MessageAllClients(const NetMessage<T>& msg, std::shared_ptr<TCPServerClientConnection<T>> ignoreClient = nullptr)
 	{
 		bool foundInvalid = false;
 		for (auto& client : m_connections)
@@ -139,7 +139,7 @@ protected:
 	{
 	}
 
-	virtual void OnMessage(std::shared_ptr<TCPServerClientConnection<T>> client, const TCPMessage<T>& msg)
+	virtual void OnMessage(std::shared_ptr<TCPServerClientConnection<T>> client, const NetMessage<T>& msg)
 	{
 
 	}

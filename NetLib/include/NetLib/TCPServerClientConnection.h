@@ -1,6 +1,6 @@
 #pragma once
 #include <iostream>
-#include "TCPMessage.h"
+#include "NetMessage.h"
 #include "TSQueue.h"
 #include "TCPConnection.h"
 #include <functional>

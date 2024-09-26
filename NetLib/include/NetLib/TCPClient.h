@@ -1,5 +1,5 @@
 #pragma once
-#include "TCPMessage.h"
+#include "NetMessage.h"
 #include "asio.hpp"
 #include "TSQueue.h"
 #include "TCPClientServerConnection.h"
@@ -73,7 +73,7 @@ public:
 		return false;
 	}
 
-	void Send(const TCPMessage<T>& msg)
+	void Send(const NetMessage<T>& msg)
 	{
 		if (IsConnected())
 		{
@@ -87,7 +87,7 @@ public:
 	virtual void OnConnectionFail()
 	{}
 
-	TSQueue<TCPMessage<T>>& GetMessages()
+	TSQueue<NetMessage<T>>& GetMessages()
 	{
 		return m_inMessages;
 	}
@@ -98,5 +98,5 @@ protected:
 	std::unique_ptr<TCPClientServerConnection<T>> m_connection;
 
 private:
-	TSQueue<TCPMessage<T>> m_inMessages;
+	TSQueue<NetMessage<T>> m_inMessages;
 };

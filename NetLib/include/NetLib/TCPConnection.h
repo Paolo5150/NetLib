@@ -1,6 +1,6 @@
 #pragma once
 #include <iostream>
-#include "TCPMessage.h"
+#include "NetMessage.h"
 #include "TSQueue.h"
 #include <functional>
 
@@ -34,7 +34,7 @@ public:
 		return m_socket.is_open();
 	}
 
-	void Send(const TCPMessage<T>& msg)
+	void Send(const NetMessage<T>& msg)
 	{
 		asio::post(m_asioContext, [this, msg]() {
 			bool isWriting = !m_outMEssagesQ.Empty();
@@ -57,20 +57,20 @@ public:
 protected:
 	asio::ip::tcp::socket m_socket;
 	asio::io_context& m_asioContext;
-	TSQueue<TCPMessage<T>> m_outMEssagesQ;
-	TCPMessage<T> m_temporaryInMsg;
+	TSQueue<NetMessage<T>> m_outMEssagesQ;
+	NetMessage<T> m_temporaryInMsg;
 	uint32_t m_id = 0;
 
 	void ReadHeader()
 	{
-		asio::async_read(m_socket, asio::buffer(&m_temporaryInMsg.Header, sizeof(TCPMessageHeader<T>)),
+		asio::async_read(m_socket, asio::buffer(&m_temporaryInMsg.Header, sizeof(NetMessageHeader<T>)),
 			[this](std::error_code ec, std::size_t length) {
 
 				if (!ec)
 				{
 					if (m_temporaryInMsg.Header.Size > 0)
 					{
-						m_temporaryInMsg.Body.resize(m_temporaryInMsg.Header.Size - sizeof(TCPMessageHeader<T>));
+						m_temporaryInMsg.Payload.resize(m_temporaryInMsg.Header.Size - sizeof(NetMessageHeader<T>));
 						ReadBody();
 					}
 					else
@@ -87,7 +87,7 @@ private:
 
 	void ReadBody()
 	{
-		asio::async_read(m_socket, asio::buffer(m_temporaryInMsg.Body.data(), m_temporaryInMsg.Body.size()),
+		asio::async_read(m_socket, asio::buffer(m_temporaryInMsg.Payload.data(), m_temporaryInMsg.GetPayloadSize()),
 			[this](std::error_code ec, std::size_t length)
 			{
 				if (!ec)
@@ -108,11 +108,11 @@ private:
 
 	void WriteHeader()
 	{
-		asio::async_write(m_socket, asio::buffer(&m_outMEssagesQ.Front().Header, sizeof(TCPMessageHeader<T>)),
+		asio::async_write(m_socket, asio::buffer(&m_outMEssagesQ.Front().Header, sizeof(NetMessageHeader<T>)),
 			[this](std::error_code ec, std::size_t length) {
 				if (!ec)
 				{
-					if (m_outMEssagesQ.Front().Body.size() > 0)
+					if (m_outMEssagesQ.Front().GetPayloadSize() > 0)
 					{
 						WriteBody();
 					}
@@ -134,7 +134,7 @@ private:
 
 	void WriteBody()
 	{
-		asio::async_write(m_socket, asio::buffer(m_outMEssagesQ.Front().Body.data(), m_outMEssagesQ.Front().Body.size()),
+		asio::async_write(m_socket, asio::buffer(m_outMEssagesQ.Front().Payload.data(), m_outMEssagesQ.Front().GetPayloadSize()),
 			[this](std::error_code ec, std::size_t length)
 			{
 				if (!ec)

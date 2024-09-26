@@ -1,6 +1,6 @@
 #pragma once
 #include <iostream>
-#include "TCPMessage.h"
+#include "NetMessage.h"
 #include "TCPConnection.h"
 #include "TSQueue.h"
 #include <functional>
@@ -11,7 +11,7 @@ class TCPClientServerConnection : public TCPConnection<T>
 public:
 
 
-	TCPClientServerConnection(asio::io_context& context, asio::ip::tcp::socket socket, TSQueue<TCPMessage<T>>& in) :
+	TCPClientServerConnection(asio::io_context& context, asio::ip::tcp::socket socket, TSQueue<NetMessage<T>>& in) :
 		TCPConnection( context, std::move(socket)),
 		m_inMessagesQ(in) 
 
@@ -44,7 +44,7 @@ public:
 	}
 
 protected:
-	TSQueue<TCPMessage<T>>& m_inMessagesQ;
+	TSQueue<NetMessage<T>>& m_inMessagesQ;
 
 private:
 	void AddToIncomingMessageQueue() override
