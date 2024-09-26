@@ -18,10 +18,11 @@ public:
 	{
 		std::cout << "Pinging server\n";
 		NetMessage<MessageType> msg;
-		msg.Header.ID = MessageType::Ping;
+		msg.SetMessageID(MessageType::Ping);
 
 		std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
-		msg << timeNow;
+		msg.SetPayload(&timeNow, sizeof(timeNow));
+		//msg << timeNow;
 
 		Send(msg);
 	}
@@ -29,7 +30,7 @@ public:
 	void Message()
 	{
 		NetMessage<MessageType> msg;
-		msg.Header.ID = MessageType::Text;
+		msg.SetMessageID(MessageType::Text);
 
 		Send(msg);
 	}
@@ -110,13 +111,15 @@ void main()
 			if (!c.GetMessages().Empty())
 			{
 				auto msg = c.GetMessages().PopFront();
-				switch (msg.Header.ID)
+				switch (msg.GetMessageID())
 				{
 				case MessageType::Ping:
 				{
 					std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
 					std::chrono::system_clock::time_point timeThen;
-					msg >> timeThen;
+					auto p = msg.GetPayload();
+					std::memcpy(&timeThen, p.data(), p.size());
+					//msg >> timeThen;
 					std::cout << "Ping: " << std::chrono::duration<double>(timeNow - timeThen).count() << "\n";
 				}
 				break;

@@ -1,11 +1,16 @@
 #pragma once
-
+#include "NetMessage.h"
 #include "UDPPacket.h"
 
 template <class T>
 class UDPPacketAssembler
 {
 public:
+	std::vector<UDPPacket<T>> CreatePackets(const NetMessage<T>& msg)
+	{
+		return CreatePackets(msg.GetMessageID(), (uint8_t*)msg.GetPayload().data(), msg.GetPayloadSize());
+	}
+
 	std::vector<UDPPacket<T>> CreatePackets(T id, uint8_t* data, uint32_t size)
 	{
 		std::vector<UDPPacket<T>> packets;
@@ -15,7 +20,7 @@ public:
 		uint16_t numOfPackets = (size / maxBodySize) + (size % maxBodySize != 0 ? 1 : 0);
 		uint8_t* dataStartPointer = data;
 
-		for (int i = 0; i < numOfPackets; i++)
+		for (uint16_t i = 0; i < numOfPackets; i++)
 		{
 			UDPPacket<T> packet;
 

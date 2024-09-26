@@ -10,8 +10,8 @@ struct UDPPacketHeader
 {
 	T MessageID{};
 	uint16_t PacketID = 0;
-	uint8_t PacketSequenceNumber = 0;
-	uint8_t PacketMaxSequenceNumbers = 0;
+	uint16_t PacketSequenceNumber = 0;
+	uint16_t PacketMaxSequenceNumbers = 0;
 };
 
 template<typename T>
@@ -43,7 +43,7 @@ struct UDPPacket
 		return DataBuffer.size() - sizeof(UDPPacketHeader<T>);
 	}
 	
-	void SetHeader( T id, uint16_t packetID,  uint8_t packetSequence, uint8_t packetMaxSequence)
+	void SetHeader( T id, uint16_t packetID, uint16_t packetSequence, uint16_t packetMaxSequence)
 	{
 		UDPPacketHeader<T> header;
 		header.MessageID = id;
