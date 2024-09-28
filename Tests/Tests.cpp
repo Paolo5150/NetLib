@@ -68,7 +68,7 @@ void TestUDPPacket()
 void TestUDPPacketAssembler()
 {
 	UDPPacketAssembler<MessageType> assembler;
-	auto maxSize = UDPPacket<MessageType>::GetMaxBodySize();
+	auto maxSize = UDPPacket<MessageType>::GetMaxPayloadSize();
 
 	std::stringstream ss;
 	for (int i = 0; i < maxSize ; i++)
@@ -117,7 +117,7 @@ void TestUDPPacketAssembler()
 void TestUDPPacketAssembler2()
 {
 	UDPPacketAssembler<MessageType> assembler;
-	auto maxSize = UDPPacket<MessageType>::GetMaxBodySize();
+	auto maxSize = UDPPacket<MessageType>::GetMaxPayloadSize();
 
 	struct TestData
 	{
@@ -161,7 +161,7 @@ void TestUDPPacketAssembler2()
 void TestUDPPacketAssembler3()
 {
 	UDPPacketAssembler<MessageType> assembler;
-	auto maxSize = UDPPacket<MessageType>::GetMaxBodySize();
+	auto maxSize = UDPPacket<MessageType>::GetMaxPayloadSize();
 
 	std::array<int, 100000> origData;
 	for (auto i = 0; i < origData.size(); i++)
@@ -174,9 +174,9 @@ void TestUDPPacketAssembler3()
 
 	auto packets = assembler.CreatePackets(msg);
 
-	assert(packets.size() == 269); //100000 * 4 / 268 + 1
+	assert(packets.size() == 274); //((100000 * 4) / 268) + 1
 
-	uint16_t maxBodySize = UDPPacket<MessageType>::GetMaxBodySize();
+	uint16_t maxBodySize = UDPPacket<MessageType>::GetMaxPayloadSize();
 
 	uint16_t totalSize = sizeof(int) * origData.size();
 	for (auto i = 0; i < packets.size(); i++)
@@ -184,11 +184,12 @@ void TestUDPPacketAssembler3()
 		auto h = packets[i].ExtractHeader();
 		assert(h.PacketID == 0);
 		assert(h.MessageID == MessageType::Data);
-		assert(h.PacketMaxSequenceNumbers == 269);
+		assert(h.PacketMaxSequenceNumbers == 274);
 		assert(h.PacketSequenceNumber == i);
 
 		auto pl = packets[i].ExtractPayload();
 
+		//All packets should have the payload full, except for the last one, which will have the remaining bytes
 		if(i < packets.size() -1)
 			assert(pl.size() == maxBodySize);
 		else

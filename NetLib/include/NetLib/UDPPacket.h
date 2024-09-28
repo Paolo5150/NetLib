@@ -4,13 +4,26 @@
 #include <asio.hpp>
 
 static constexpr uint32_t MTULimit = 1500;
+static constexpr uint32_t UDPOverhead = 20 + 8; //20 bytes  ip header, 8 bytes udp header
 
 template<typename T>
 struct UDPPacketHeader
 {
+	/**
+	* User defined ID
+	*/
 	T MessageID{};
-	uint16_t PacketID = 0;
+	/**
+	* Packet ID: all packets belonging to the same message have the same PacketID. Assigned by the UPDPacketAssembler
+	*/
+	uint16_t PacketID = 0; 
+	/**
+	* The packet index
+	*/
 	uint16_t PacketSequenceNumber = 0;
+	/**
+	* The maximum number of packets for the full message
+	*/
 	uint16_t PacketMaxSequenceNumbers = 0;
 };
 
@@ -33,9 +46,14 @@ struct UDPPacket
 		DataBuffer.resize(MTULimit);
 	}
 
-	static size_t GetMaxBodySize()
+	static size_t GetMaxPayloadSize()
 	{
-		return MTULimit - sizeof(UDPPacketHeader<T>);
+		return MTULimit - sizeof(UDPPacketHeader<T>) - UDPOverhead;
+	}
+
+	static size_t GetTotalHeaderSizeIncludingOverheads()
+	{
+		return sizeof(UDPPacketHeader<T>) + UDPOverhead;
 	}
 
 	size_t GetPayloadSize()
@@ -75,9 +93,13 @@ struct UDPPacket
 		if (!m_headerSet)
 			throw std::runtime_error("Header must be set first");
 
-		assert(dataSize <= MTULimit - sizeof(UDPPacketHeader<T>), "Packet body size over the limit");
+		if(dataSize > GetMaxPayloadSize())
+			throw std::runtime_error("Packet body size exceeds the limit");
 
-		PacketSize = dataSize + sizeof(UDPPacketHeader<T>);
+
+		assert(dataSize <= MTULimit - GetTotalHeaderSizeIncludingOverheads() && "Packet body size over the limit");
+
+		PacketSize = dataSize + +sizeof(UDPPacketHeader<T>);
 
 		DataBuffer.resize(PacketSize);
 

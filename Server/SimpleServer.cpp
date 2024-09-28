@@ -72,13 +72,13 @@ public:
 
 void main()
 {
-	CustomServer s(60000);
-	s.Start();
+	//CustomServer s(60000);
+	//s.Start();
 
-	//CustomUDPReceiver c(50000);
+	CustomUDPReceiver c(50000);
 	while (1)
 	{
-		s.Update();
+		//s.Update();
 	}
 
 

@@ -1,5 +1,5 @@
 #include <asio.hpp>
-
+#include "UDPPacket.h"
 template<class T>
 class UDPReceiver
 {
@@ -33,9 +33,9 @@ public:
 	{
 		if (m_socket.is_open())
 		{
-			uint8_t buf[12];
+			uint8_t buf[MTULimit];
 
-			m_socket.async_receive_from(asio::buffer(buf, 12), senderPoint,
+			m_socket.async_receive_from(asio::buffer(buf, MTULimit), senderPoint,
 				[this](std::error_code ec, std::size_t bytesRead) {
 
 					if (!ec)

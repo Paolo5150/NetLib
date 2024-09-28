@@ -16,8 +16,10 @@ public:
 		std::vector<UDPPacket<T>> packets;
 
 		uint32_t startSize = size;
-		auto maxBodySize = UDPPacket<T>::GetMaxBodySize();
-		uint16_t numOfPackets = (size / maxBodySize) + (size % maxBodySize != 0 ? 1 : 0);
+		auto maxBodySize = UDPPacket<T>::GetMaxPayloadSize();
+		uint32_t numOfPackets = (size / maxBodySize) + (size % maxBodySize != 0 ? 1 : 0);
+		//Store the numOfPackets in a larger container (32bit) so it doesn't overflow, but assert that the max number is within limit
+		assert(numOfPackets < UINT16_MAX);
 		uint8_t* dataStartPointer = data;
 
 		for (uint16_t i = 0; i < numOfPackets; i++)
@@ -59,7 +61,7 @@ public:
 		std::vector<uint8_t> message;
 		uint32_t actualSize = 0; //Calculate while assembling the message
 		//Assume max size
-		auto maxSize = packets.size() * UDPPacket<T>::GetMaxBodySize();
+		auto maxSize = packets.size() * UDPPacket<T>::GetMaxPayloadSize();
 		message.resize(maxSize);
 		uint8_t* dataStartPoint = message.data();
 		for (size_t i = 0; i < packets.size(); i++)

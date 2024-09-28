@@ -57,19 +57,22 @@ public:
 
 	void SendData(MessageType id, uint8_t* data, size_t size)
 	{
-		Send(id, data, size);
+		NetMessage<MessageType> msg;
+		msg.SetMessageID(id);
+		msg.SetPayload(data, size);
+		Send(msg);
 	}
 };
 
 void main()
 {
-	Customclient c;
-	c.Connect("127.0.0.1", 60000);
+	//Customclient c;
+	//c.Connect("127.0.0.1", 60000);
 
 	bool key[3] = { 0,0,0 };
 	bool oldKey[3] = { 0,0,0 };
 
-	//CustomUDPSender sender("127.0.0.1", 50000);
+	CustomUDPSender sender("127.0.0.1", 50000);
 
 	bool quittime = false;
 	while (!quittime)
@@ -91,60 +94,61 @@ void main()
 		{
 			//std::cout << "Pressed 1\n";
 			std::stringstream m;
-			for (int i = 0; i < 1490; i++)
+			for (int i = 0; i < 2000; i++)
 			{
-				m << 'a';
+				m << "cazzo ";
 			}
 
-			c.Ping();
-			//sender.SendData(MessageType::Text, (uint8_t*)m.str().data(), m.str().size() * sizeof(char));
+			//c.Ping();
+			sender.SendData(MessageType::Text, (uint8_t*)m.str().data(), m.str().size() * sizeof(char));
 		}
 
-		if (key[1] && !oldKey[1])
-			c.Message();
+		//if (key[1] && !oldKey[1])
+		//	c.Message();
 
 		for (int i = 0; i < 3; i++)
 			oldKey[i] = key[i];
 
-		if (c.IsConnected())
-		{
-			if (!c.GetMessages().Empty())
-			{
-				auto msg = c.GetMessages().PopFront();
-				switch (msg.GetMessageID())
-				{
-				case MessageType::Ping:
-				{
-					std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
-					std::chrono::system_clock::time_point timeThen;
-					auto p = msg.GetPayload();
-					std::memcpy(&timeThen, p.data(), p.size());
-					//msg >> timeThen;
-					std::cout << "Ping: " << std::chrono::duration<double>(timeNow - timeThen).count() << "\n";
-				}
-				break;
-		
-				case MessageType::Text:
-				{
-					std::cout << "Text:\n";
-		
-					std::string t;
-					t.resize(msg.GetPayloadSize());
-					std::memcpy(t.data(), msg.GetPayload().data(), msg.GetPayloadSize());
-		
-					std::cout << "Text: " << t << "\n";
-				}
-				break;
-				default:
-					break;
-				}
-			}
-		}
-		else
-		{
-			std::cout << "Server down, bye\n";
-			quittime = true;
-		}
+		//if (c.IsConnected())
+		//{
+		//	if (!c.GetMessages().Empty())
+		//	{
+		//		auto msg = c.GetMessages().PopFront();
+		//		switch (msg.GetMessageID())
+		//		{
+		//		case MessageType::Ping:
+		//		{
+		//			std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
+		//			std::chrono::system_clock::time_point timeThen;
+		//			auto p = msg.GetPayload();
+		//			std::memcpy(&timeThen, p.data(), p.size());
+		//			//msg >> timeThen;
+		//			std::cout << "Ping: " << std::chrono::duration<double>(timeNow - timeThen).count() << "\n";
+		//		}
+		//		break;
+		//
+		//		case MessageType::Text:
+		//		{
+		//			std::cout << "Text:\n";
+		//
+		//			std::string t;
+		//			t.resize(msg.GetPayloadSize());
+		//			std::memcpy(t.data(), msg.GetPayload().data(), msg.GetPayloadSize());
+		//
+		//			std::cout << "Text: " << t << "\n";
+		//		}
+		//		break;
+		//		default:
+		//			break;
+		//		}
+		//	}
+		//}
+		//else
+		//{
+		//	std::cout << "Server down, bye\n";
+		//	quittime = true;
+		//}
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 
 }
