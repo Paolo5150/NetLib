@@ -94,10 +94,8 @@ void main()
 		{
 			//std::cout << "Pressed 1\n";
 			std::stringstream m;
-			for (int i = 0; i < 2000; i++)
-			{
-				m << "cazzo ";
-			}
+			std::string t = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n";
+			m << t;
 
 			//c.Ping();
 			sender.SendData(MessageType::Text, (uint8_t*)m.str().data(), m.str().size() * sizeof(char));

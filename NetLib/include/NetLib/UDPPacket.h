@@ -41,6 +41,14 @@ struct UDPPacket
 		PacketSize = DataBuffer.size();
 	}
 
+	UDPPacket(uint8_t* fullPacketData, uint32_t size)
+	{
+		DataBuffer.resize(size);
+		std::memcpy(DataBuffer.data(), fullPacketData, size);
+		auto h = ExtractHeader();
+		PacketSize = DataBuffer.size();
+	}
+
 	UDPPacket()
 	{
 		DataBuffer.resize(MTULimit);
