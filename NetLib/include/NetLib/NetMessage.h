@@ -17,10 +17,6 @@ template<typename T>
 class NetMessage
 {
 public:
-	size_t Size() const
-	{
-		return sizeof(NetMessageHeader<T>) + Payload.size();
-	}
 
 	T GetMessageID() const
 	{
@@ -57,30 +53,9 @@ public:
 	{
 		Payload.resize(dataSize);
 		std::memcpy(Payload.data(), data, dataSize);
-		Header.Size = Size();
+		Header.Size = Payload.size() + sizeof(UDPPacketHeader<T>);
 	}
 
-	//template<typename DT>
-	//friend NetMessage<T>& operator << (NetMessage<T>& msg, const DT& data)
-	//{
-	//	static_assert(std::is_standard_layout<DT>::value, "Data too complex");
-	//	size_t i = msg.Payload.size();
-	//	msg.Payload.resize(msg.Payload.size() + sizeof(DT));
-	//	std::memcpy(msg.Payload.data() + i, &data, sizeof(DT));
-	//	msg.Header.Size = msg.Size();
-	//	return msg;
-	//}
-	//
-	//template<typename DT>
-	//friend NetMessage<T>& operator >> (NetMessage<T>& msg, DT& data)
-	//{
-	//	static_assert(std::is_standard_layout<DT>::value, "Data too complex");
-	//	size_t i = msg.Payload.size() - sizeof(DT);
-	//	std::memcpy(&data, msg.Payload.data() + i, sizeof(DT));
-	//	msg.Payload.resize(i);
-	//	msg.Header.Size = msg.Size();
-	//	return msg;
-	//}
 private:
 	std::vector<uint8_t> Payload;
 	friend class TCPConnection<T>;

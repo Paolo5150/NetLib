@@ -124,6 +124,7 @@ protected:
 		uint32_t PacketsCount = 0;
 		uint32_t PacketID = 0; //Not really needed, just for testing
 		std::vector < UDPPacket<T>> Packets;
+		std::vector < bool> PacketsSet;
 		std::chrono::high_resolution_clock::time_point LastUpdated;
 
 	};
@@ -151,15 +152,31 @@ protected:
 		{
 			//std::cout << "Received first packet of id " << h.PacketID << "\n";
 			m_packetMap[h.PacketID].Packets.resize(h.PacketMaxSequenceNumbers);
+			m_packetMap[h.PacketID].PacketsSet.resize(h.PacketMaxSequenceNumbers, false);
+			m_packetMap[h.PacketID].LastUpdated = std::chrono::high_resolution_clock::now();
+
 			m_packetMap[h.PacketID].MessageID = h.MessageID;
 			m_packetMap[h.PacketID].PacketID = h.PacketID;
 			m_packetMap[h.PacketID].PacketsCount = 1;
+
+			m_packetMap[h.PacketID].Packets[h.PacketSequenceNumber] = packet;
+			m_packetMap[h.PacketID].PacketsSet[h.PacketSequenceNumber] = true;
+
 		}
 		else
-			m_packetMap[h.PacketID].PacketsCount++;
+		{
+			if (!m_packetMap[h.PacketID].PacketsSet[h.PacketSequenceNumber])
+			{
+				m_packetMap[h.PacketID].PacketsCount++;
+				m_packetMap[h.PacketID].Packets[h.PacketSequenceNumber] = packet;
+				m_packetMap[h.PacketID].PacketsSet[h.PacketSequenceNumber] = true;
+				m_packetMap[h.PacketID].LastUpdated = std::chrono::high_resolution_clock::now();
+			}
+			else
+				std::cout << "Skpping duplciate packets " << h.PacketID << " sequence " << h.PacketSequenceNumber << "\n";
+		}
 
-		m_packetMap[h.PacketID].Packets[h.PacketSequenceNumber] = packet;
-		m_packetMap[h.PacketID].LastUpdated = std::chrono::high_resolution_clock::now();
+		
 
 		if (m_packetMap[h.PacketID].PacketsCount == h.PacketMaxSequenceNumbers)
 		{
@@ -174,6 +191,7 @@ protected:
 			m_inMessages.PushBack(std::move(msg));
 
 			m_packetMap.erase(h.PacketID);
+			std::cout << "Message complete\n";
 		}
 	}
 
@@ -185,5 +203,5 @@ private:
 	asio::ip::udp::endpoint senderPoint;  // Endpoint that stores the sender's information.
 	UDPPacketAssembler<T> m_packetAssembler;  // Assembler to reconstruct messages from packets.
 	TSQueue<OwnedUDPMessage<T>> m_inMessages;  // Thread-safe queue to store incoming messages.
-	uint32_t m_dropMessageThresholdMills = 100;  // Time threshold to drop incomplete messages (in milliseconds).
+	uint32_t m_dropMessageThresholdMills = 500;  // Time threshold to drop incomplete messages (in milliseconds).
 };
