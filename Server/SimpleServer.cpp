@@ -58,7 +58,7 @@ public:
 };
 
 
-class CustomUDPReceiver : UDPReceiver<MessageType>
+class CustomUDPReceiver : public UDPReceiver<MessageType>
 {
 public:
 	CustomUDPReceiver( uint16_t port) :
@@ -66,6 +66,19 @@ public:
 	{
 
 	}
+
+	void OnMessage(OwnedUDPMessage<MessageType> msg) override
+	{
+		auto& pl = msg.TheMessage.GetPayload();
+		//Test, i know it's a string
+		std::string s;
+		s.resize(pl.size());
+		std::memcpy((void*)s.data(), pl.data(), pl.size());
+
+		std::cout << "Received " << s;
+		std::cout << "Received from: " << msg.RemoteAddress;
+	}
+
 
 
 };
@@ -79,6 +92,7 @@ void main()
 	while (1)
 	{
 		//s.Update();
+		c.Update();
 	}
 
 

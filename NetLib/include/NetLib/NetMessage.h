@@ -42,6 +42,11 @@ public:
 		return Payload;
 	}
 
+	std::vector<uint8_t>& GetPayload()
+	{
+		return Payload;
+	}
+
 	friend std::ostream& operator << (std::ostream& stream, const NetMessage<T>& msg)
 	{
 		stream << "ID: " << static_cast<int>(msg.Header.ID) << " Size: " << msg.Header.Size;
@@ -94,6 +99,20 @@ struct OwnedTCPMessage
 	friend std::ostream& operator <<(std::ostream& os, const OwnedTCPMessage<T>& msg)
 	{
 		os << msg.TheMessage;
+		return os;
+	}
+};
+
+template<typename T>
+struct OwnedUDPMessage
+{
+	std::string RemoteAddress;
+	uint32_t RemotePort;
+	NetMessage<T> TheMessage;
+
+	friend std::ostream& operator <<(std::ostream& os, const OwnedUDPMessage<T>& msg)
+	{
+		os << msg.TheMessage < ". From " << RemoteAddress << " " << RemotePort;
 		return os;
 	}
 };

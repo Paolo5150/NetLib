@@ -103,7 +103,7 @@ void TestUDPPacketAssembler()
 	}
 
 	//Recreate message
-	auto message = assembler.AssembleMessageFromPackets(packets);
+	auto message = assembler.AssemblePayloadFromPackets(packets);
 	std::string toStr;
 	toStr.resize(message.size());
 	std::memcpy(toStr.data(), message.data(), message.size());
@@ -147,7 +147,7 @@ void TestUDPPacketAssembler2()
 
 
 	//Recreate message
-	auto message = assembler.AssembleMessageFromPackets(packets);
+	auto message = assembler.AssemblePayloadFromPackets(packets);
 	TestData retrievedData;
 	std::memcpy(&retrievedData, message.data(), message.size());
 
@@ -201,7 +201,7 @@ void TestUDPPacketAssembler3()
 	assert(totalSize == 0);
 
 	//Rebuild data
-	auto message = assembler.AssembleMessageFromPackets(packets);
+	auto message = assembler.AssemblePayloadFromPackets(packets);
 	std::array<int, 100000> gotData;
 
 	std::memcpy(&gotData, message.data(), message.size());

@@ -53,10 +53,10 @@ public:
 	}
 
 	/**
-	* Recreates original message from packets.
+	* Recreates original payload from packets (no header).
 	* Requires packets to be in correct order
 	*/
-	std::vector<uint8_t> AssembleMessageFromPackets(const std::vector<UDPPacket<T>>& packets)
+	std::vector<uint8_t> AssemblePayloadFromPackets(const std::vector<UDPPacket<T>>& packets)
 	{
 		std::vector<uint8_t> message;
 		uint32_t actualSize = 0; //Calculate while assembling the message
@@ -75,6 +75,27 @@ public:
 		return message;
 
 	}
+
+	void AssemblePayloadFromPackets(const std::vector<UDPPacket<T>>& packets, std::vector<uint8_t>& outPayload)
+	{
+		uint32_t actualSize = 0; //Calculate while assembling the message
+		//Assume max size
+		auto maxSize = packets.size() * UDPPacket<T>::GetMaxPayloadSize();
+		outPayload.resize(maxSize);
+		uint8_t* dataStartPoint = outPayload.data();
+		for (size_t i = 0; i < packets.size(); i++)
+		{
+			std::memcpy(dataStartPoint, packets[i].DataBuffer.data() + sizeof(UDPPacketHeader<T>), (packets[i].DataBuffer.size() - sizeof(UDPPacketHeader<T>)));
+			dataStartPoint += (packets[i].DataBuffer.size() - sizeof(UDPPacketHeader<T>));
+			actualSize += (packets[i].DataBuffer.size() - sizeof(UDPPacketHeader<T>));
+		}
+
+		outPayload.resize(actualSize);
+
+	}
+
+
+
 private:
 	uint16_t m_packetIDCounter = 0;
 

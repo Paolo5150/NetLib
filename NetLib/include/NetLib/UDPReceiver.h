@@ -31,6 +31,24 @@ public:
 			m_contextThread.join();
 	}
 
+	/**
+	* To be called by inheriting class, in a loop, to process available messages
+	*/
+	void Update(size_t maxMessages = -1)
+	{
+		m_inMessages.Wait(); //Unblocked when the queue has something in it
+
+		size_t messageCount = 0;
+		while (messageCount < maxMessages && !m_inMessages.Empty())
+		{
+			auto msg = m_inMessages.PopFront();
+			OnMessage(msg);
+			messageCount++;
+		}
+	}
+
+	virtual void OnMessage(OwnedUDPMessage<T> msg) = 0;
+
 	void Receive()
 	{
 		if (m_socket.is_open())
@@ -42,7 +60,6 @@ public:
 					{
 						if (bytesRead > 0)
 						{
-							std::cout << "[UDP Receiver]: Got: " << bytesRead << " from  " << senderPoint << "\n";
 							//Packet info
 							UDPPacket<T> packet(m_receiveBuffer, bytesRead);
 							auto h = packet.ExtractHeader();
@@ -52,6 +69,7 @@ public:
 							{
 								m_packetMap[h.PacketID].Packets.resize(h.PacketMaxSequenceNumbers);
 								m_packetMap[h.PacketID].Packets[h.PacketSequenceNumber] = packet;
+								m_packetMap[h.PacketID].MessageID = h.MessageID;
 
 								m_packetMap[h.PacketID].PacketsCount = 1;
 							}
@@ -63,14 +81,16 @@ public:
 
 							if (m_packetMap[h.PacketID].PacketsCount == h.PacketMaxSequenceNumbers)
 							{
-								auto msg = m_packetAssembler.AssembleMessageFromPackets(m_packetMap[h.PacketID].Packets);
-								//I know it's a string, let's see
-								std::string s;
-								s.resize(msg.size());
-								std::memcpy((void*)s.data(), msg.data(), msg.size());
+								OwnedUDPMessage<T> msg;
+								msg.TheMessage.SetMessageID(m_packetMap[h.PacketID].MessageID);
 
-								NetMessage msg;
-								msg.SetMessageID()
+								msg.RemoteAddress = senderPoint.address().to_string();
+								msg.RemotePort = senderPoint.port();
+
+								//Dump the payload directly in the message
+								m_packetAssembler.AssemblePayloadFromPackets(m_packetMap[h.PacketID].Packets, msg.TheMessage.GetPayload());
+								m_inMessages.PushBack(std::move(msg));								
+
 							}
 						
 						}
@@ -93,6 +113,7 @@ public:
 private:
 	struct PacketInfo
 	{
+		T MessageID;
 		uint32_t PacketsCount = 0;
 		std::vector < UDPPacket<T>> Packets;
 		std::chrono::high_resolution_clock::time_point LastUpdated;
@@ -105,7 +126,7 @@ private:
 	uint8_t m_receiveBuffer[MTULimit];
 	std::unordered_map<uint16_t, PacketInfo> m_packetMap;
 	UDPPacketAssembler<T> m_packetAssembler;
-	TSQueue<NetMessage<T>> m_inMessages;
+	TSQueue<OwnedUDPMessage<T>> m_inMessages;
 
 
 
