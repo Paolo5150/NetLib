@@ -50,27 +50,27 @@ public:
 							auto it = m_packetMap.find(h.PacketID);
 							if (it == m_packetMap.end())
 							{
-								m_packetMap[h.PacketID].resize(h.PacketMaxSequenceNumbers);
-								m_packetMap[h.PacketID][h.PacketSequenceNumber] = packet;
+								m_packetMap[h.PacketID].Packets.resize(h.PacketMaxSequenceNumbers);
+								m_packetMap[h.PacketID].Packets[h.PacketSequenceNumber] = packet;
 
-								m_packetCount[h.PacketID] = 1;
+								m_packetMap[h.PacketID].PacketsCount = 1;
 							}
 							else
 							{
-								m_packetCount[h.PacketID]++;
-								m_packetMap[h.PacketID][h.PacketSequenceNumber] = packet;
+								m_packetMap[h.PacketID].PacketsCount++;
+								m_packetMap[h.PacketID].Packets[h.PacketSequenceNumber] = packet;
 							}
 
-							if (m_packetCount[h.PacketID] == h.PacketMaxSequenceNumbers)
+							if (m_packetMap[h.PacketID].PacketsCount == h.PacketMaxSequenceNumbers)
 							{
-								std::cout << "Received all packets for ID " << h.PacketID << "\n";
-								auto msg = m_packetAssembler.AssembleMessageFromPackets(m_packetMap[h.PacketID]);
+								auto msg = m_packetAssembler.AssembleMessageFromPackets(m_packetMap[h.PacketID].Packets);
 								//I know it's a string, let's see
 								std::string s;
 								s.resize(msg.size());
 								std::memcpy((void*)s.data(), msg.data(), msg.size());
 
-								std::cout << "Message is: " << s << "\n";
+								NetMessage msg;
+								msg.SetMessageID()
 							}
 						
 						}
@@ -91,15 +91,21 @@ public:
 	}
 
 private:
+	struct PacketInfo
+	{
+		uint32_t PacketsCount = 0;
+		std::vector < UDPPacket<T>> Packets;
+		std::chrono::high_resolution_clock::time_point LastUpdated;
 
+	};
 	asio::io_context m_context;
 	std::thread m_contextThread;
 	asio::ip::udp::socket m_socket;
 	asio::ip::udp::endpoint senderPoint;
 	uint8_t m_receiveBuffer[MTULimit];
-	std::unordered_map<uint16_t, std::vector<UDPPacket<T>>> m_packetMap;
-	std::unordered_map<uint16_t, uint32_t> m_packetCount;
+	std::unordered_map<uint16_t, PacketInfo> m_packetMap;
 	UDPPacketAssembler<T> m_packetAssembler;
+	TSQueue<NetMessage<T>> m_inMessages;
 
 
 
