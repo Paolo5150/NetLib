@@ -88,7 +88,7 @@ private:
 
 					if (!ec)
 					{
-						std::cout << "[UDP Sender]: Sent: " << bytes_sent << "\n";
+						//std::cout << "[UDP Sender]: Sent: " << bytes_sent << "\n";
 						packetCounts--;
 						if (packetCounts == 0)
 						{
@@ -97,7 +97,7 @@ private:
 					}
 					else
 					{
-						std::cout << "[UDP Sender]: Failed to send: " << ec.message() << "\n";
+						//std::cout << "[UDP Sender]: Failed to send: " << ec.message() << "\n";
 						Destroy();
 					}
 				});
@@ -110,7 +110,6 @@ private:
 	asio::ip::udp::socket m_socket;
 	asio::ip::udp::endpoint m_endpoint;
 	UDPPacketAssembler<T> m_packetAssembler;
-	uint16_t m_packetIDCounter = 0;
 	TSQueue<NetMessage<T>> m_outMessages;
 	asio::executor_work_guard<asio::io_context::executor_type> m_work_guard;
 

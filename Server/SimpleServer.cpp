@@ -75,8 +75,7 @@ public:
 		s.resize(pl.size());
 		std::memcpy((void*)s.data(), pl.data(), pl.size());
 
-		std::cout << "Received " << s;
-		std::cout << "Received from: " << msg.RemoteAddress;
+		std::cout << "Received " << s << "\n";
 	}
 
 
