@@ -21,8 +21,8 @@ public:
 		catch (std::exception& e)
 		{
 			std::cout << "Error creating UDP Receiver: " << e.what();
-		}
 
+		}
 	}
 
 	~UDPReceiver()
@@ -33,7 +33,6 @@ public:
 		{
 			m_context.stop();
 			m_contextThread.join();
-
 		}
 	}
 
@@ -53,13 +52,24 @@ public:
 		}
 	}
 
+	/**
+	* OnMessage: To be overridden by inheriting class.
+	* This function is called whenever a complete message is available.
+	*/
 	virtual void OnMessage(OwnedUDPMessage<T> msg) = 0;
 
+	/**
+	* SetDropMessageThreshold: Set the time threshold for dropping incomplete messages.
+	*/
 	void SetDropMessageThreshold(uint32_t timeMillis)
 	{
 		m_dropMessageThresholdMills = timeMillis;
 	}
 
+	/**
+	* CheckIncompleteMessages: Check if any incomplete messages have exceeded the threshold.
+	* Drops them if they have not been completed within the threshold time.
+	*/
 	void CheckIncompleteMessages()
 	{
 		//Check for potentially incomplete messages
@@ -79,6 +89,10 @@ public:
 		}
 	}
 
+	/**
+	* Receive: Start asynchronous receiving of UDP packets.
+	* It recursively calls itself to continue receiving packets indefinitely.
+	*/
 	void Receive()
 	{
 		if (m_socket.is_open())
@@ -101,10 +115,6 @@ public:
 
 				});
 		}
-		
-		//Sync version
-		//auto sent = m_socket.send_to(asio::buffer(data, size), m_endpoint);
-		//std::cout << "Sent " << sent << "\n";
 	}
 
 protected:
@@ -169,13 +179,11 @@ protected:
 
 private:
 	
-	asio::io_context m_context;
-	std::thread m_contextThread;
-	asio::ip::udp::socket m_socket;
-	asio::ip::udp::endpoint senderPoint;
-	UDPPacketAssembler<T> m_packetAssembler;
-	TSQueue<OwnedUDPMessage<T>> m_inMessages;
-	uint32_t m_dropMessageThresholdMills = 100; //Threshold, in milliseconds, over which messages will be dropped if packets are not received within it.
-
-	
+	asio::io_context m_context;  // The IO context to handle asynchronous IO.
+	std::thread m_contextThread;  // The thread that runs the IO context.
+	asio::ip::udp::socket m_socket;  // UDP socket for communication.
+	asio::ip::udp::endpoint senderPoint;  // Endpoint that stores the sender's information.
+	UDPPacketAssembler<T> m_packetAssembler;  // Assembler to reconstruct messages from packets.
+	TSQueue<OwnedUDPMessage<T>> m_inMessages;  // Thread-safe queue to store incoming messages.
+	uint32_t m_dropMessageThresholdMills = 100;  // Time threshold to drop incomplete messages (in milliseconds).
 };
