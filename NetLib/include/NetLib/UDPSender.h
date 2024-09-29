@@ -19,9 +19,7 @@ public:
 			asio::ip::udp::resolver res(m_context);
 			m_endpoint = *res.resolve(asio::ip::udp::v4(), sendToAddress, std::to_string(port)).begin();
 			m_contextThread = std::thread([this]() {
-				std::cout << "Start context\n";
 				m_context.run(); 
-				std::cout << "Conext stopped in thread\n";
 
 				});
 		}
@@ -39,7 +37,6 @@ public:
 
 	void Send(const NetMessage<T>& msg)
 	{
-		std::cout << "Stopped " << m_context.stopped() << std::endl;
 		try
 		{
 			asio::post(m_context, [this, msg]() {
@@ -79,7 +76,6 @@ private:
 		auto& msg = m_outMessages.PopFront();
 		m_packets = m_packetAssembler.CreatePackets(msg);
 		auto packetCounts = m_packets.size();
-		std::cout << "Writing " << packetCounts << " packets" << "\n";
 
 		for (auto& p : m_packets)
 		{
