@@ -29,6 +29,7 @@ public:
 
 	}
 
+	
 	void OnMessage(std::shared_ptr<TCPServerClientConnection<MessageType>> client, const NetMessage<MessageType>& msg)
 	{
 		switch (msg.GetMessageID())
@@ -66,6 +67,12 @@ public:
 	{
 
 	}
+
+	void OnDisconnection(const std::string& addressPort)
+	{
+		std::cout << "Callback of disconnection: " << addressPort << "\n";
+	}
+
 
 	void OnMessage(OwnedUDPMessage<MessageType> msg) override
 	{

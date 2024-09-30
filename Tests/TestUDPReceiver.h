@@ -27,9 +27,15 @@ public:
 
 	}
 
+	void OnDisconnection(const std::string& addressPort)
+	{
+		std::cout << "Callback of disconnection: " << addressPort << "\n";
+	}
+
 	void SetReceiveBuffer(uint8_t* data, size_t size, asio::ip::udp::endpoint& endp)
 	{
 		std::memcpy(m_receiveBuffer, data, size);
+		CheckInactiveEndpoints();
 		CheckIncompleteMessages();
 		ProcessPacket(endp, size);
 	}
@@ -85,8 +91,8 @@ void TestUDPReceiver()
 		asio::ip::udp::endpoint ep(asio::ip::address::from_string("127.0.0.1"), 12345);
 		mr.ExpectedSenderID = "127.0.0.1";
 		mr.ExpectedPort = 12345;
-
-
+	
+	
 		//Two packets, but send one, verify incomplete messages are nuked
 		UDPPacket<MessageType> p1;
 		p1.SetHeader(MessageType::Text, 0, 0, 2);
@@ -108,31 +114,32 @@ void TestUDPReceiver()
 		//Need to trigger another receive
 		mr.SetReceiveBuffer(p3.DataBuffer.data(), p3.DataBuffer.size(), ep);
 	
+	
 		//Map will still be 1, because of the new unrelated packet we sent
 		mr.AssertMapSize(1, ep);
 		mr.AssertHasPendingPacket(0, ep); //Shouldn't have any packet of ID 0, as it was removed
 	}
-
+	
 	//Out of order packets
 	{
 		MockUDPReceiver mr(90000);
 		asio::ip::udp::endpoint ep(asio::ip::address::from_string("127.0.0.1"), 12345);
 		mr.ExpectedSenderID = "127.0.0.1";
 		mr.ExpectedPort = 12345;
-
+	
 		UDPPacketAssembler<MessageType> assembler;
 		std::stringstream ss;
 		for (int i = 0; i < 20000; i++)
 		{
 			ss << (char)i;
 		}
-
+	
 		NetMessage<MessageType> msg;
 		msg.SetMessageID(MessageType::Text);
 		msg.SetPayload(ss.str().data(), ss.str().size());
-
+	
 		auto packets = assembler.CreatePackets(msg);
-
+	
 		//Fill with random duplicates
 		packets.push_back(packets[0]);
 		packets.push_back(packets[3]);
@@ -140,17 +147,17 @@ void TestUDPReceiver()
 		packets.push_back(packets[2]);
 		packets.push_back(packets[1]);
 		packets.push_back(packets[6]);
-
+	
 		unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 		std::shuffle(packets.begin(), packets.end(), std::default_random_engine(seed));
-
+	
 		for (auto& p : packets)
 			mr.SetReceiveBuffer(p.DataBuffer.data(), p.DataBuffer.size(), ep);
-
+	
 		mr.ExpectedMessage = ss.str();
 		mr.Update(); //Will trigger OnMessage, more asserts there
 	}
-
+	
 	{
 		MockUDPReceiver mr(90000);
 		asio::ip::udp::endpoint ep1(asio::ip::address::from_string("192.168.1.1"), 12345);
@@ -181,30 +188,30 @@ void TestUDPReceiver()
 		mr.ExpectedMessage = message1;
 		mr.ExpectedSenderID = "192.168.1.1";
 		mr.ExpectedPort = 12345;
-
+	
 		mr.Update(1);
 		mr.ExpectedMessage = message2;
 		mr.ExpectedSenderID = "10.0.0.1";
 		mr.ExpectedPort = 12346;
-
+	
 		mr.Update(1);
 		mr.ExpectedMessage = message3;
 		mr.ExpectedSenderID = "172.16.0.1";
 		mr.ExpectedPort = 12347;
-
+	
 		mr.Update(1);
-
+	
 		asio::ip::udp::endpoint ep4(asio::ip::address::from_string("122.16.0.1"), 12347);
-
+	
 		//test saved endpoints
 		assert(mr.HasEndpoint(ep1));
 		assert(mr.HasEndpoint(ep2));
 		assert(mr.HasEndpoint(ep3));
 		assert(!mr.HasEndpoint(ep4));
-
+	
 		mr.DisconnectEndpoint(ep1);
 		assert(!mr.HasEndpoint(ep1));
-
+	
 	}
 
 	{
@@ -212,7 +219,7 @@ void TestUDPReceiver()
 		asio::ip::udp::endpoint ep1(asio::ip::address::from_string("192.168.1.1"), 12345);
 		asio::ip::udp::endpoint ep2(asio::ip::address::from_string("10.0.0.1"), 12346);
 		asio::ip::udp::endpoint ep3(asio::ip::address::from_string("172.16.0.1"), 12347);
-
+		mr.SetDisconnectEndpointThreshold(5000);
 		// Create packets for different senders
 		UDPPacket<MessageType> p1, p2, p3;
 
@@ -265,6 +272,32 @@ void TestUDPReceiver()
 		mr.ExpectedSenderID = "172.16.0.1";
 		mr.ExpectedPort = 12347;
 		mr.Update(1);  // Process message from sender 3
+
+		//Test automatic disconnection
+		//Send from ep1, but not ep1 and ep3, which should be removed after time threshold
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep1);
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep2);
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep1);
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep2);
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep1);
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep2);
+		std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep1);
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep2);
+		std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep1);
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep2);
+		mr.Update(0); //Pass 0, so we don't actually receive a message callback, we only want to trigger the disconnection callback
+
+		assert(mr.HasEndpoint(ep1));
+		assert(mr.HasEndpoint(ep2));
+		assert(!mr.HasEndpoint(ep3));
+
+
 	}
 
 

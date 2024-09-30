@@ -83,6 +83,13 @@ public:
 			});
 	}
 
+	void ForceWake()
+	{
+		std::unique_lock<std::mutex> l2(m_waitMtx);
+		m_cv.notify_one();
+
+	}
+
 private:
 	std::mutex m_mutex;
 	std::deque<T> m_q;

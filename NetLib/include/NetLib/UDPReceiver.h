@@ -3,6 +3,9 @@
 #include "UDPPacketAssembler.h"
 #include "TSQueue.h"
 #include <unordered_map>
+
+//#define ENABLE_COUT
+
 template<class T>
 class UDPReceiver
 {
@@ -20,7 +23,9 @@ public:
 		}
 		catch (std::exception& e)
 		{
+#ifdef ENABLE_COUT
 			std::cout << "Error creating UDP Receiver: " << e.what();
+#endif
 
 		}
 	}
@@ -41,7 +46,7 @@ public:
 	*/
 	void Update(size_t maxMessages = -1)
 	{
-		m_inMessages.Wait(); //Unblocked when the queue has something in it
+		m_inMessages.Wait(); //Unblocked when the queue has something in it, or when calling ForceWake
 
 		size_t messageCount = 0;
 		while (messageCount < maxMessages && !m_inMessages.Empty())
@@ -50,6 +55,12 @@ public:
 			OnMessage(msg);
 			messageCount++;
 		}
+
+		//Notify of diconnection
+		std::unique_lock<std::mutex> l(m_disonnectListMutex);
+		for (auto& s : m_disconnections)
+			OnDisconnection(s);
+
 	}
 
 	/**
@@ -57,6 +68,7 @@ public:
 	* This function is called whenever a complete message is available.
 	*/
 	virtual void OnMessage(OwnedUDPMessage<T> msg) = 0;
+	virtual void OnDisconnection(const std::string& addressPort) = 0;
 
 	/**
 	* SetDropMessageThreshold: Set the time threshold for dropping incomplete messages.
@@ -64,6 +76,14 @@ public:
 	void SetDropMessageThreshold(uint32_t timeMillis)
 	{
 		m_dropMessageThresholdMills = timeMillis;
+	}
+
+	/**
+	* SetDropMessageThreshold: Set the time threshold for disconnecting an inactive endpoint
+	*/
+	void SetDisconnectEndpointThreshold(uint32_t timeMillis)
+	{
+		m_disconnectEndpointThresholdMills = timeMillis;
 	}
 
 	/**
@@ -76,21 +96,54 @@ public:
 		//Remove from map if found
 		auto now = std::chrono::high_resolution_clock::now();
 
-		for (auto s = m_packetMap.begin(); s != m_packetMap.end(); s++)
+		for (auto s = m_packetMap.begin(); s != m_packetMap.end(); s++ )
 		{
 			auto it = s->second.begin();
+
 			for (auto it = s->second.begin(); it != s->second.end(); )
 			{
-				auto timeSinceUpdate = std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second.LastUpdated).count();
+				double timeSinceUpdate = std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second.LastUpdated).count();
+	
 				if (timeSinceUpdate > m_dropMessageThresholdMills)
 				{
+#ifdef ENABLE_COUT
 					std::cout << "Packet ID " << it->second.PacketID << " last updated " << timeSinceUpdate << ". Over threshold, will drop message\n";
+#endif
 					it = s->second.erase(it);
 				}
 				else
 					it++;
 			}
 		}
+	}
+
+	void CheckInactiveEndpoints()
+	{
+		auto now = std::chrono::high_resolution_clock::now();
+
+		for (auto it = m_endpointLastUpdate.begin(); it != m_endpointLastUpdate.end(); )
+		{
+			double timeSinceUpdate = std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second).count();
+			if (timeSinceUpdate > m_disconnectEndpointThresholdMills)
+			{
+#ifdef ENABLE_COUT
+				std::cout << it->first << " inactive for " << timeSinceUpdate << ", will be removed\n";
+#endif
+				{
+					std::unique_lock<std::mutex> l(m_disonnectListMutex);
+					m_disconnections.push_back(it->first);
+				}
+				m_packetMap.erase(it->first);
+				it = m_endpointLastUpdate.erase(it);
+			}
+			else
+				it++;
+		}
+
+		std::unique_lock<std::mutex> l(m_disonnectListMutex);
+		if (m_disconnections.size() > 0)
+			m_inMessages.ForceWake(); //Force the update, so disconnections callback is invoked
+		
 	}
 
 	/**
@@ -101,6 +154,7 @@ public:
 	{
 		std::string senderKey = senderPoint.address().to_string() + ":" + std::to_string(senderPoint.port());
 		m_packetMap.erase(senderKey);
+		m_endpointLastUpdate.erase(senderKey);
 	}
 
 	/**
@@ -125,6 +179,7 @@ public:
 			m_socket.async_receive_from(asio::buffer(m_receiveBuffer, MTULimit), senderPoint,
 				[this](std::error_code ec, std::size_t bytesRead) {
 
+					CheckInactiveEndpoints();
 					CheckIncompleteMessages();
 
 					if (!ec)
@@ -135,7 +190,11 @@ public:
 						Receive();
 					}
 					else
+					{
+#ifdef ENABLE_COUT
 						std::cout << "[UDP Receiver]: Failed to Got: " << ec.message() << "\n";
+#endif
+					}
 
 				});
 		}
@@ -154,6 +213,7 @@ protected:
 	};
 	uint8_t m_receiveBuffer[MTULimit];
 	std::unordered_map<std::string, std::unordered_map<uint16_t, PacketInfo>> m_packetMap;
+	std::unordered_map<std::string, std::chrono::high_resolution_clock::time_point> m_endpointLastUpdate;
 
 	size_t GetAvailableMessagesCount()
 	{
@@ -192,7 +252,6 @@ protected:
 		auto it = sender->second.find(h.PacketID);
 		if (it == sender->second.end())
 		{
-			//std::cout << "Received first packet of id " << h.PacketID << "\n";
 			sender->second[h.PacketID].Packets.resize(h.PacketMaxSequenceNumbers);
 			sender->second[h.PacketID].PacketsSet.resize(h.PacketMaxSequenceNumbers, false);
 			sender->second[h.PacketID].LastUpdated = std::chrono::high_resolution_clock::now();
@@ -213,9 +272,15 @@ protected:
 				sender->second[h.PacketID].LastUpdated = std::chrono::high_resolution_clock::now();
 			}
 			else
+			{
+#ifdef ENABLE_COUT
 				std::cout << "Skpping duplciate packets " << h.PacketID << " sequence " << h.PacketSequenceNumber << "\n";
+#endif
+
+			}
 		}
 
+		m_endpointLastUpdate[senderKey] = std::chrono::high_resolution_clock::now();
 		if (sender->second[h.PacketID].PacketsCount == h.PacketMaxSequenceNumbers)
 		{
 			OwnedUDPMessage<T> msg;
@@ -241,4 +306,7 @@ private:
 	UDPPacketAssembler<T> m_packetAssembler;  // Assembler to reconstruct messages from packets.
 	TSQueue<OwnedUDPMessage<T>> m_inMessages;  // Thread-safe queue to store incoming messages.
 	uint32_t m_dropMessageThresholdMills = 500;  // Time threshold to drop incomplete messages (in milliseconds).
+	uint32_t m_disconnectEndpointThresholdMills = 30000;  // Time threshold to remove an inactive endpoint from the map (disconnection.
+	std::mutex m_disonnectListMutex;
+	std::vector<std::string> m_disconnections;
 };
