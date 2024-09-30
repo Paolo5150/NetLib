@@ -191,7 +191,6 @@ protected:
 			m_inMessages.PushBack(std::move(msg));
 
 			m_packetMap.erase(h.PacketID);
-			std::cout << "Message complete\n";
 		}
 	}
 

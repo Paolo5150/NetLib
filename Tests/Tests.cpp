@@ -3,8 +3,6 @@
 #include "TestUDPPacketAssembler.h"
 #include "TestUDPReceiver.h"
 
-
-
 void main()
 {
 	TestUDPPacket();

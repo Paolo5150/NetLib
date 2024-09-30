@@ -54,8 +54,6 @@ public:
 
 void TestUDPReceiver()
 {
-	
-
 	{
 		MockUDPReceiver mr(90000);
 		asio::ip::udp::endpoint ep(asio::ip::address::from_string("127.0.0.1"), 12345);
