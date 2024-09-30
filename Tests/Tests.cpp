@@ -10,5 +10,8 @@ void main()
 	TestUDPPacketAssembler2();
 	TestUDPPacketAssembler3();
 	TestUDPReceiver();
-	std::cout << "All tests passed";
+
+	std::cout << "\n\n|----------------|\n";
+	std::cout << " All tests passed";
+	std::cout << "\n|----------------|\n\n";
 }

@@ -76,17 +76,42 @@ public:
 		//Remove from map if found
 		auto now = std::chrono::high_resolution_clock::now();
 
-		for (auto it = m_packetMap.begin(); it != m_packetMap.end(); )
+		for (auto s = m_packetMap.begin(); s != m_packetMap.end(); s++)
 		{
-			auto timeSinceUpdate = std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second.LastUpdated).count();
-			if (timeSinceUpdate > m_dropMessageThresholdMills)
+			auto it = s->second.begin();
+			for (auto it = s->second.begin(); it != s->second.end(); )
 			{
-				std::cout << "Packet ID " << it->second.PacketID << " last updated " << timeSinceUpdate << ". Over threshold, will drop message\n";
-				it = m_packetMap.erase(it);
+				auto timeSinceUpdate = std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second.LastUpdated).count();
+				if (timeSinceUpdate > m_dropMessageThresholdMills)
+				{
+					std::cout << "Packet ID " << it->second.PacketID << " last updated " << timeSinceUpdate << ". Over threshold, will drop message\n";
+					it = s->second.erase(it);
+				}
+				else
+					it++;
 			}
-			else
-				it++;
 		}
+	}
+
+	/**
+	* Removes a specific endpoint (and pending packets) from memory.
+	* To be called by inheriting class, if necessary (eg. client sends a 'disconnect' message)
+	*/
+	void DisconnectEndpoint(asio::ip::udp::endpoint& senderPoint)
+	{
+		std::string senderKey = senderPoint.address().to_string() + ":" + std::to_string(senderPoint.port());
+		m_packetMap.erase(senderKey);
+	}
+
+	/**
+	* Returns true if we received any packets from specified endpoint (which means it's considered connected).
+	*/
+	bool HasEndpoint(asio::ip::udp::endpoint& senderPoint)
+	{
+		std::string senderKey = senderPoint.address().to_string() + ":" + std::to_string(senderPoint.port());
+
+		auto sender = m_packetMap.find(senderKey);
+		return sender != m_packetMap.end();
 	}
 
 	/**
@@ -104,7 +129,6 @@ public:
 
 					if (!ec)
 					{
-
 						if (bytesRead > 0)
 							ProcessPacket(senderPoint, bytesRead);
 
@@ -129,68 +153,82 @@ protected:
 
 	};
 	uint8_t m_receiveBuffer[MTULimit];
-	std::unordered_map<uint16_t, PacketInfo> m_packetMap;
+	std::unordered_map<std::string, std::unordered_map<uint16_t, PacketInfo>> m_packetMap;
 
 	size_t GetAvailableMessagesCount()
 	{
 		return m_inMessages.Size();
 	}
 
-	bool HasPendingPacketOfId(uint16_t id)
+	bool HasPendingPacketOfId(uint16_t id, asio::ip::udp::endpoint& senderPoint)
 	{
-		auto it = m_packetMap.find(id);
-		return it != m_packetMap.end();
+		std::string senderKey = senderPoint.address().to_string() + ":" + std::to_string(senderPoint.port());
+		auto send = m_packetMap.find(senderKey);
+		if (send != m_packetMap.end())
+		{
+			auto it = send->second.find(id);
+			return it != send->second.end();
+		}
+		return false;
 	}
+
+	
 
 	void ProcessPacket(asio::ip::udp::endpoint& senderPoint, size_t& bytesRead)
 	{
 		//Packet info
 		UDPPacket<T> packet(m_receiveBuffer, bytesRead);
 		auto h = packet.ExtractHeader();
-		auto it = m_packetMap.find(h.PacketID);
-		if (it == m_packetMap.end())
+
+		std::string senderKey = senderPoint.address().to_string() + ":" + std::to_string(senderPoint.port());
+
+		auto sender = m_packetMap.find(senderKey);
+		if (sender == m_packetMap.end())
+		{
+			m_packetMap[senderKey] = {};
+			sender = m_packetMap.find(senderKey);
+		}
+			
+		auto it = sender->second.find(h.PacketID);
+		if (it == sender->second.end())
 		{
 			//std::cout << "Received first packet of id " << h.PacketID << "\n";
-			m_packetMap[h.PacketID].Packets.resize(h.PacketMaxSequenceNumbers);
-			m_packetMap[h.PacketID].PacketsSet.resize(h.PacketMaxSequenceNumbers, false);
-			m_packetMap[h.PacketID].LastUpdated = std::chrono::high_resolution_clock::now();
-
-			m_packetMap[h.PacketID].MessageID = h.MessageID;
-			m_packetMap[h.PacketID].PacketID = h.PacketID;
-			m_packetMap[h.PacketID].PacketsCount = 1;
-
-			m_packetMap[h.PacketID].Packets[h.PacketSequenceNumber] = packet;
-			m_packetMap[h.PacketID].PacketsSet[h.PacketSequenceNumber] = true;
+			sender->second[h.PacketID].Packets.resize(h.PacketMaxSequenceNumbers);
+			sender->second[h.PacketID].PacketsSet.resize(h.PacketMaxSequenceNumbers, false);
+			sender->second[h.PacketID].LastUpdated = std::chrono::high_resolution_clock::now();
+			sender->second[h.PacketID].MessageID = h.MessageID;
+			sender->second[h.PacketID].PacketID = h.PacketID;
+			sender->second[h.PacketID].PacketsCount = 1;
+			sender->second[h.PacketID].Packets[h.PacketSequenceNumber] = packet;
+			sender->second[h.PacketID].PacketsSet[h.PacketSequenceNumber] = true;
 
 		}
 		else
 		{
-			if (!m_packetMap[h.PacketID].PacketsSet[h.PacketSequenceNumber])
+			if (!sender->second[h.PacketID].PacketsSet[h.PacketSequenceNumber])
 			{
-				m_packetMap[h.PacketID].PacketsCount++;
-				m_packetMap[h.PacketID].Packets[h.PacketSequenceNumber] = packet;
-				m_packetMap[h.PacketID].PacketsSet[h.PacketSequenceNumber] = true;
-				m_packetMap[h.PacketID].LastUpdated = std::chrono::high_resolution_clock::now();
+				sender->second[h.PacketID].PacketsCount++;
+				sender->second[h.PacketID].Packets[h.PacketSequenceNumber] = packet;
+				sender->second[h.PacketID].PacketsSet[h.PacketSequenceNumber] = true;
+				sender->second[h.PacketID].LastUpdated = std::chrono::high_resolution_clock::now();
 			}
 			else
 				std::cout << "Skpping duplciate packets " << h.PacketID << " sequence " << h.PacketSequenceNumber << "\n";
 		}
 
-		
-
-		if (m_packetMap[h.PacketID].PacketsCount == h.PacketMaxSequenceNumbers)
+		if (sender->second[h.PacketID].PacketsCount == h.PacketMaxSequenceNumbers)
 		{
 			OwnedUDPMessage<T> msg;
-			msg.TheMessage.SetMessageID(m_packetMap[h.PacketID].MessageID);
+			msg.TheMessage.SetMessageID(sender->second[h.PacketID].MessageID);
 
 			msg.RemoteAddress = senderPoint.address().to_string();
 			msg.RemotePort = senderPoint.port();
 
 			//Dump the payload directly in the message
-			m_packetAssembler.AssemblePayloadFromPackets(m_packetMap[h.PacketID].Packets, msg.TheMessage.GetPayload());
+			m_packetAssembler.AssemblePayloadFromPackets(sender->second[h.PacketID].Packets, msg.TheMessage.GetPayload());
 			m_inMessages.PushBack(std::move(msg));
 
-			m_packetMap.erase(h.PacketID);
+			sender->second.erase(h.PacketID);
 		}
 	}
 
