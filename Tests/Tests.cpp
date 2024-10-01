@@ -5,6 +5,9 @@
 
 void main()
 {
+	std::cout << "\n\n|----------------|\n";
+	std::cout << " Running some incredible tests...";
+	std::cout << "\n|----------------|\n\n";
 	TestUDPPacket();
 	TestUDPPacketAssembler();
 	TestUDPPacketAssembler2();

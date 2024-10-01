@@ -29,7 +29,7 @@ public:
 
 	void OnDisconnection(const std::string& addressPort)
 	{
-		std::cout << "Callback of disconnection: " << addressPort << "\n";
+		assert(true);
 	}
 
 	void SetReceiveBuffer(uint8_t* data, size_t size, asio::ip::udp::endpoint& endp)
