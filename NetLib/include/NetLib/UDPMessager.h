@@ -89,6 +89,8 @@ public:
 		std::unique_lock<std::mutex> l(m_disonnectListMutex);
 		for (auto& s : m_disconnections)
 			OnDisconnection(s);
+
+		m_disconnections.clear();
 	}
 
 	/**
@@ -171,7 +173,6 @@ public:
 		std::unique_lock<std::mutex> l(m_disonnectListMutex);
 		if (m_disconnections.size() > 0)
 			m_inMessages.ForceWake(); //Force the update, so disconnections callback is invoked
-		
 	}
 
 	/**
@@ -195,8 +196,6 @@ public:
 		auto sender = m_packetMap.find(senderKey);
 		return sender != m_packetMap.end();
 	}
-
-	
 
 protected:
 	struct PacketInfo
@@ -278,7 +277,6 @@ protected:
 			}
 		}
 
-		m_endpointLastUpdate[senderKey] = std::chrono::high_resolution_clock::now();
 		if (sender->second[h.PacketID].PacketsCount == h.PacketMaxSequenceNumbers)
 		{
 			OwnedUDPMessage<T> msg;
@@ -326,6 +324,9 @@ private:
 			m_socket.async_receive_from(asio::buffer(m_receiveBuffer, MTULimit), senderPoint,
 				[this](std::error_code ec, std::size_t bytesRead) {
 
+					std::string senderKey = senderPoint.address().to_string() + ":" + std::to_string(senderPoint.port());
+					m_endpointLastUpdate[senderKey] = std::chrono::high_resolution_clock::now();
+
 					CheckInactiveEndpoints();
 					CheckIncompleteMessages();
 
@@ -362,7 +363,9 @@ private:
 
 					if (!ec)
 					{
-						//std::cout << "[UDP Sender]: Sent: " << bytes_sent << "\n";
+#ifdef ENABLE_COUT
+						std::cout << "[UDP Sender]: Sent: " << bytes_sent << "\n";
+#endif
 						packetCounts--;
 						if (packetCounts == 0)
 						{
@@ -371,7 +374,9 @@ private:
 					}
 					else
 					{
-						//std::cout << "[UDP Sender]: Failed to send: " << ec.message() << "\n";
+#ifdef ENABLE_COUT
+						std::cout << "[UDP Sender]: Failed to send: " << ec.message() << "\n";
+#endif
 					}
 				});
 		}

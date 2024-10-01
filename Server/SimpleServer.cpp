@@ -82,8 +82,9 @@ public:
 		std::memcpy((void*)s.data(), pl.data(), pl.size());
 
 		std::cout << "Received " << s << "\n";
+		std::cout << "From " << msg.RemoteAddress << " " << msg.RemotePort << "\n";
 
-		Send(msg.TheMessage, "127.0.0.1", 50001);
+		Send(msg.TheMessage, msg.RemoteAddress, msg.RemotePort);
 	}
 
 
