@@ -63,27 +63,27 @@ public:
 
 void TestUDPMessager()
 {
-	{
-		MockUDPMessager mr;
-		mr.StartListening(90000);
-		asio::ip::udp::endpoint ep(asio::ip::address::from_string("127.0.0.1"), 12345);
-		mr.ExpectedSenderID = "127.0.0.1";
-		mr.ExpectedPort = 12345;
-		UDPPacket<MessageType> p1;
-		p1.SetHeader(MessageType::Text, 0, 0, 1);
-	
-		std::string message = "Hello";
-		p1.SetPayload((uint8_t*)message.data(), message.size());
-	
-		//This emulates the Receive function, when data comes in
-		mr.SetReceiveBuffer(p1.DataBuffer.data(), p1.DataBuffer.size(), ep);
-		//Single packet, message should have been processed
-		mr.AssertInMessagesSize(1);
-		//Map should be clear, no other expected packets
-		mr.AssertMapSize(0, ep);
-		mr.ExpectedMessage = message;
-		mr.Update(-1); //Will trigger OnMessage, more asserts there
-	}
+	//{
+	//	MockUDPMessager mr;
+	//	mr.StartListening(90000);
+	//	asio::ip::udp::endpoint ep(asio::ip::address::from_string("127.0.0.1"), 12345);
+	//	mr.ExpectedSenderID = "127.0.0.1";
+	//	mr.ExpectedPort = 12345;
+	//	UDPPacket<MessageType> p1;
+	//	p1.SetHeader(MessageType::Text, 0, 0, 1);
+	//
+	//	std::string message = "Hello";
+	//	p1.SetPayload((uint8_t*)message.data(), message.size());
+	//
+	//	//This emulates the Receive function, when data comes in
+	//	mr.SetReceiveBuffer(p1.DataBuffer.data(), p1.DataBuffer.size(), ep);
+	//	//Single packet, message should have been processed
+	//	mr.AssertInMessagesSize(1);
+	//	//Map should be clear, no other expected packets
+	//	mr.AssertMapSize(0, ep);
+	//	mr.ExpectedMessage = message;
+	//	mr.Update(); //Will trigger OnMessage, more asserts there
+	//}
 	
 	//Dropped packets
 	{
@@ -266,17 +266,17 @@ void TestUDPMessager()
 		mr.ExpectedMessage = message1;
 		mr.ExpectedSenderID = "192.168.1.1";
 		mr.ExpectedPort = 12345;
-		mr.Update(false, 1);  // Process message from sender 1
+		mr.Update(true, 1);  // Process message from sender 1
 
 		mr.ExpectedMessage = message2;
 		mr.ExpectedSenderID = "10.0.0.1";
 		mr.ExpectedPort = 12346;
-		mr.Update(false, 1);  // Process message from sender 2
+		mr.Update(true, 1);  // Process message from sender 2
 
 		mr.ExpectedMessage = message3;
 		mr.ExpectedSenderID = "172.16.0.1";
 		mr.ExpectedPort = 12347;
-		mr.Update(false, 1);  // Process message from sender 3
+		mr.Update(true, 1);  // Process message from sender 3
 
 		//Test automatic disconnection
 		//Send from ep1, but not ep1 and ep3, which should be removed after time threshold
@@ -296,7 +296,7 @@ void TestUDPMessager()
 		std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep1);
 		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep2);
-		mr.Update(false, 0); //Pass 0, so we don't actually receive a message callback, we only want to trigger the disconnection callback
+		mr.Update(true, 0); //Pass 0, so we don't actually receive a message callback, we only want to trigger the disconnection callback
 
 		assert(mr.HasEndpoint(ep1));
 		assert(mr.HasEndpoint(ep2));

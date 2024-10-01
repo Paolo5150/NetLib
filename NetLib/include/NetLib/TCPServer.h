@@ -42,34 +42,7 @@ public:
 		std::cout << "[Server] Stopped\n";
 	}
 
-	void WaitForConnection()
-	{
-		std::cout << "[Server] Waiting for connection:...\n";
-
-		m_asioAcceptor.async_accept([this](std::error_code ec, asio::ip::tcp::socket socket) {
-			if (!ec)
-			{
-				std::cout << "[Server] New Connection: " << socket.remote_endpoint() << std::endl;
-				std::shared_ptr<TCPServerClientConnection<T>> neWcon = std::make_shared<TCPServerClientConnection<T>>(m_context, std::move(socket), m_inMessages);
-				
-				if (OnClientConnection(neWcon, m_clientIDCounter))
-				{
-					m_connections.push_back(std::move(neWcon));
-					m_connections.back()->ConnectToClient(m_clientIDCounter);
-					m_clientIDCounter++;
-					std::cout << "[Server] Connection approved by server\n";
-				}
-				else
-					std::cout << "[Server] Connection refused by server\n";
-			}
-			else
-			{
-				std::cout << "[Server] New Connection Error: " << ec.message() << std::endl;
-			}
-			
-			WaitForConnection();
-			});
-	}
+	
 
 	void MessageClient(std::shared_ptr<TCPServerClientConnection<T>> client, const NetMessage<T>& msg)
 	{
@@ -135,6 +108,11 @@ protected:
 		return false;
 	}
 
+	/**
+	* Invoked when a new client is disconnected.
+	* @param client The pointer to the client connection
+	* @param assigned ID The artificial ID assigned to the client, should the connection be accepted
+	*/
 	virtual void OnClientDisconnection(std::shared_ptr <TCPServerClientConnection<T>> client)
 	{
 	}
@@ -143,12 +121,41 @@ protected:
 	{
 
 	}
+private:
 
 	std::deque<std::shared_ptr<TCPServerClientConnection<T>>> m_connections;
 	TSQueue <OwnedTCPMessage<T>> m_inMessages;
 	asio::io_context m_context;
 	std::thread m_contextThread;
 	asio::ip::tcp::acceptor m_asioAcceptor;
-	uint32_t m_clientIDCounter = 10000;
+	uint32_t m_clientIDCounter = 0;
+	void WaitForConnection()
+	{
+		std::cout << "[Server] Waiting for connection:...\n";
+
+		m_asioAcceptor.async_accept([this](std::error_code ec, asio::ip::tcp::socket socket) {
+			if (!ec)
+			{
+				std::cout << "[Server] New Connection: " << socket.remote_endpoint() << std::endl;
+				std::shared_ptr<TCPServerClientConnection<T>> neWcon = std::make_shared<TCPServerClientConnection<T>>(m_context, std::move(socket), m_inMessages);
+
+				if (OnClientConnection(neWcon, m_clientIDCounter))
+				{
+					m_connections.push_back(std::move(neWcon));
+					m_connections.back()->ConnectToClient(m_clientIDCounter);
+					m_clientIDCounter++;
+					std::cout << "[Server] Connection approved by server\n";
+				}
+				else
+					std::cout << "[Server] Connection refused by server\n";
+			}
+			else
+			{
+				std::cout << "[Server] New Connection Error: " << ec.message() << std::endl;
+			}
+
+			WaitForConnection();
+			});
+	}
 
 };

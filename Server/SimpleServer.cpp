@@ -93,15 +93,15 @@ public:
 
 void main()
 {
-	//CustomServer s(60000);
-	//s.Start();
+	CustomServer s(60000);
+	s.Start();
 
-	CustomUDPMessager c;
-	c.StartListening(50000);
+	//CustomUDPMessager c;
+	//c.StartListening(50000);
 	while (1)
 	{
-		//s.Update();
-		c.Update();
+		s.Update();
+		//c.Update();
 	}
 
 

@@ -4,7 +4,7 @@
 #include "TSQueue.h"
 #include <unordered_map>
 
-//#define ENABLE_COUT
+#define ENABLE_COUT
 
 template<class T>
 class UDPMessager
@@ -20,8 +20,12 @@ public:
 
 	~UDPMessager()
 	{
+		m_work_guard.reset();
 		if (m_socket.is_open())
+		{
+			m_socket.cancel();
 			m_socket.close();
+		}
 		if (m_contextThread.joinable())
 		{
 			m_context.stop();
@@ -181,7 +185,7 @@ public:
 	*/
 	void DisconnectEndpoint(asio::ip::udp::endpoint& senderPoint)
 	{
-		std::string senderKey = senderPoint.address().to_string() + ":" + std::to_string(senderPoint.port());
+		std::string senderKey = CreateSenderKey(senderPoint);
 		m_packetMap.erase(senderKey);
 		m_endpointLastUpdate.erase(senderKey);
 	}
@@ -191,7 +195,7 @@ public:
 	*/
 	bool HasEndpoint(asio::ip::udp::endpoint& senderPoint)
 	{
-		std::string senderKey = senderPoint.address().to_string() + ":" + std::to_string(senderPoint.port());
+		std::string senderKey = CreateSenderKey(senderPoint);
 
 		auto sender = m_packetMap.find(senderKey);
 		return sender != m_packetMap.end();
@@ -219,7 +223,7 @@ protected:
 
 	bool HasPendingPacketOfId(uint16_t id, asio::ip::udp::endpoint& senderPoint)
 	{
-		std::string senderKey = senderPoint.address().to_string() + ":" + std::to_string(senderPoint.port());
+		std::string senderKey = CreateSenderKey(senderPoint);
 		auto send = m_packetMap.find(senderKey);
 		if (send != m_packetMap.end())
 		{
@@ -233,11 +237,13 @@ protected:
 
 	void ProcessPacket(asio::ip::udp::endpoint& senderPoint, size_t& bytesRead)
 	{
+		std::string senderKey = CreateSenderKey(senderPoint);
+		m_endpointLastUpdate[senderKey] = std::chrono::high_resolution_clock::now();
+
 		//Packet info
 		UDPPacket<T> packet(m_receiveBuffer, bytesRead);
 		auto h = packet.ExtractHeader();
 
-		std::string senderKey = senderPoint.address().to_string() + ":" + std::to_string(senderPoint.port());
 
 		auto sender = m_packetMap.find(senderKey);
 		if (sender == m_packetMap.end())
@@ -298,7 +304,7 @@ private:
 	asio::io_context m_context;  // The IO context to handle asynchronous IO.
 	std::thread m_contextThread;  // The thread that runs the IO context.
 	asio::ip::udp::socket m_socket;  // UDP socket for communication.
-	asio::ip::udp::endpoint senderPoint;  // Endpoint that stores the sender's information.
+	asio::ip::udp::endpoint m_senderPoint;  // Endpoint that stores the sender's information.
 	UDPPacketAssembler<T> m_packetAssembler;  // Assembler to reconstruct messages from packets.
 	uint32_t m_dropMessageThresholdMills = 500;  // Time threshold to drop incomplete messages (in milliseconds).
 	uint32_t m_disconnectEndpointThresholdMills = 30000;  // Time threshold to remove an inactive endpoint from the map (disconnection.
@@ -312,7 +318,11 @@ private:
 	asio::ip::udp::endpoint m_endpoint;
 	asio::executor_work_guard<asio::io_context::executor_type> m_work_guard;
 
+	std::string CreateSenderKey(asio::ip::udp::endpoint endPoint)
+	{
+		return endPoint.address().to_string() + ":" + std::to_string(endPoint.port());
 
+	}
 	/**
 	* Receive: Start asynchronous receiving of UDP packets.
 	* It recursively calls itself to continue receiving packets indefinitely.
@@ -321,10 +331,10 @@ private:
 	{
 		if (m_socket.is_open())
 		{
-			m_socket.async_receive_from(asio::buffer(m_receiveBuffer, MTULimit), senderPoint,
+			m_socket.async_receive_from(asio::buffer(m_receiveBuffer, MTULimit), m_senderPoint,
 				[this](std::error_code ec, std::size_t bytesRead) {
 
-					std::string senderKey = senderPoint.address().to_string() + ":" + std::to_string(senderPoint.port());
+					std::string senderKey = CreateSenderKey(m_senderPoint);
 					m_endpointLastUpdate[senderKey] = std::chrono::high_resolution_clock::now();
 
 					CheckInactiveEndpoints();
@@ -333,9 +343,14 @@ private:
 					if (!ec)
 					{
 						if (bytesRead > 0)
-							ProcessPacket(senderPoint, bytesRead);
+							ProcessPacket(m_senderPoint, bytesRead);
 
 						Receive();
+					}
+					else if (ec == asio::error::operation_aborted)
+					{
+						std::cout << "[UDP Receiver]: Aborted gracefully\n";
+
 					}
 					else
 					{

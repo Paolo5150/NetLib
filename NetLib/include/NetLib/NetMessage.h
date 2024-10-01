@@ -53,7 +53,7 @@ public:
 	{
 		Payload.resize(dataSize);
 		std::memcpy(Payload.data(), data, dataSize);
-		Header.Size = Payload.size() + sizeof(UDPPacketHeader<T>);
+		Header.Size = Payload.size() + sizeof(NetMessageHeader<T>);
 	}
 
 private:

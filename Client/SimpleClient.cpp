@@ -22,7 +22,6 @@ public:
 
 		std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
 		msg.SetPayload(&timeNow, sizeof(timeNow));
-		//msg << timeNow;
 
 		Send(msg);
 	}
@@ -81,23 +80,23 @@ public:
 
 void main()
 {
-	//Customclient c;
-	//c.Connect("127.0.0.1", 60000);
+	Customclient c;
+	c.Connect("127.0.0.1", 60000);
 
 	bool key[3] = { 0,0,0 };
 	bool oldKey[3] = { 0,0,0 };
 
-	CustomUDPSender sender;
-	FILE* f = fopen("netconfig.txt", "r");
-	uint32_t port;
-	fscanf(f, "%d", &port);
-	std::cout << "Listening to " << port << "\n";
-	sender.StartListening(port);
+	//CustomUDPSender sender;
+	//FILE* f = fopen("netconfig.txt", "r");
+	//uint32_t port;
+	//fscanf(f, "%d", &port);
+	//std::cout << "Listening to " << port << "\n";
+	//sender.StartListening(port);
 
 	bool quittime = false;
 	while (!quittime)
 	{
-		sender.Update(true);
+		//sender.Update(true);
 		if (GetForegroundWindow() == GetConsoleWindow())
 		{
 			key[0] = GetAsyncKeyState('1') & 0x8000;
@@ -117,55 +116,55 @@ void main()
 			std::string t = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n";
 			m << "Ciao\n";
 
-			//c.Ping();
-			sender.SendData(MessageType::Text, (uint8_t*)m.str().data(), m.str().size() * sizeof(char), "127.0.0.1", 50000);
+			c.Ping();
+		//	sender.SendData(MessageType::Text, (uint8_t*)m.str().data(), m.str().size() * sizeof(char), "127.0.0.1", 50000);
 		}
 
-		//if (key[1] && !oldKey[1])
-		//	c.Message();
+		if (key[1] && !oldKey[1])
+			c.Message();
 
 		for (int i = 0; i < 3; i++)
 			oldKey[i] = key[i];
 
-		//if (c.IsConnected())
-		//{
-		//	if (!c.GetMessages().Empty())
-		//	{
-		//		auto msg = c.GetMessages().PopFront();
-		//		switch (msg.GetMessageID())
-		//		{
-		//		case MessageType::Ping:
-		//		{
-		//			std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
-		//			std::chrono::system_clock::time_point timeThen;
-		//			auto p = msg.GetPayload();
-		//			std::memcpy(&timeThen, p.data(), p.size());
-		//			//msg >> timeThen;
-		//			std::cout << "Ping: " << std::chrono::duration<double>(timeNow - timeThen).count() << "\n";
-		//		}
-		//		break;
-		//
-		//		case MessageType::Text:
-		//		{
-		//			std::cout << "Text:\n";
-		//
-		//			std::string t;
-		//			t.resize(msg.GetPayloadSize());
-		//			std::memcpy(t.data(), msg.GetPayload().data(), msg.GetPayloadSize());
-		//
-		//			std::cout << "Text: " << t << "\n";
-		//		}
-		//		break;
-		//		default:
-		//			break;
-		//		}
-		//	}
-		//}
-		//else
-		//{
-		//	std::cout << "Server down, bye\n";
-		//	quittime = true;
-		//}
+		if (c.IsConnected())
+		{
+			if (!c.GetMessages().Empty())
+			{
+				auto msg = c.GetMessages().PopFront();
+				switch (msg.GetMessageID())
+				{
+				case MessageType::Ping:
+				{
+					std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
+					std::chrono::system_clock::time_point timeThen;
+					auto p = msg.GetPayload();
+					std::memcpy(&timeThen, p.data(), p.size());
+					//msg >> timeThen;
+					std::cout << "Ping: " << std::chrono::duration<double>(timeNow - timeThen).count() << "\n";
+				}
+				break;
+		
+				case MessageType::Text:
+				{
+					std::cout << "Text:\n";
+		
+					std::string t;
+					t.resize(msg.GetPayloadSize());
+					std::memcpy(t.data(), msg.GetPayload().data(), msg.GetPayloadSize());
+		
+					std::cout << "Text: " << t << "\n";
+				}
+				break;
+				default:
+					break;
+				}
+			}
+		}
+		else
+		{
+			std::cout << "Server down, bye\n";
+			quittime = true;
+		}
 	}
 
 }
