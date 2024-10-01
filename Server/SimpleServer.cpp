@@ -1,7 +1,7 @@
 #include <iostream>
 #include <NetLib/NetMessage.h>
 #include <NetLib/TCPServer.h>
-#include <NetLib/UDPReceiver.h>
+#include <NetLib/UDPMessager.h>
 
 enum class MessageType : uint32_t
 {
@@ -59,11 +59,10 @@ public:
 };
 
 
-class CustomUDPReceiver : public UDPReceiver<MessageType>
+class CustomUDPMessager : public UDPMessager<MessageType>
 {
 public:
-	CustomUDPReceiver( uint16_t port) :
-		UDPReceiver( port)
+	CustomUDPMessager( ) :	UDPMessager( )
 	{
 
 	}
@@ -83,6 +82,8 @@ public:
 		std::memcpy((void*)s.data(), pl.data(), pl.size());
 
 		std::cout << "Received " << s << "\n";
+
+		Send(msg.TheMessage, "127.0.0.1", 50001);
 	}
 
 
@@ -94,7 +95,8 @@ void main()
 	//CustomServer s(60000);
 	//s.Start();
 
-	CustomUDPReceiver c(50000);
+	CustomUDPMessager c;
+	c.StartListening(50000);
 	while (1)
 	{
 		//s.Update();

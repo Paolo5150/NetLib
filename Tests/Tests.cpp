@@ -1,7 +1,7 @@
 #include "NetLib/UDPPacketAssembler.h"
 #include "TestUDPPacket.h"
 #include "TestUDPPacketAssembler.h"
-#include "TestUDPReceiver.h"
+#include "TestUDPMessager.h"
 
 void main()
 {
@@ -12,7 +12,7 @@ void main()
 	TestUDPPacketAssembler();
 	TestUDPPacketAssembler2();
 	TestUDPPacketAssembler3();
-	TestUDPReceiver();
+	TestUDPMessager();
 
 	std::cout << "\n\n|----------------|\n";
 	std::cout << " All tests passed";

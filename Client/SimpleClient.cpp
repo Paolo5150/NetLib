@@ -1,7 +1,7 @@
 #include <iostream>
 #include <NetLib/NetMessage.h>
 #include <NetLib/TCPClient.h>
-#include <NetLib/UDPSender.h>
+#include <NetLib/UDPMessager.h>
 #include <chrono>
 #include <sstream>
 
@@ -47,20 +47,35 @@ public:
 
 };
 
-class CustomUDPSender : UDPSender<MessageType>
+class CustomUDPSender : public UDPMessager<MessageType>
 {
 public:
-	CustomUDPSender(const std::string& sendToAddress, uint16_t port) :
-		UDPSender(sendToAddress, port)
+	CustomUDPSender() :	UDPMessager()
 	{
 	}
 
-	void SendData(MessageType id, uint8_t* data, size_t size)
+	void SendData(MessageType id, uint8_t* data, size_t size, const std::string& sendToAddress, uint32_t port)
 	{
 		NetMessage<MessageType> msg;
 		msg.SetMessageID(id);
 		msg.SetPayload(data, size);
-		Send(msg);
+		Send(msg, sendToAddress, port);
+	}
+
+	void OnDisconnection(const std::string& addressPort)
+	{
+	}
+
+
+	void OnMessage(OwnedUDPMessage<MessageType> msg) override
+	{
+		auto& pl = msg.TheMessage.GetPayload();
+		//Test, i know it's a string
+		std::string s;
+		s.resize(pl.size());
+		std::memcpy((void*)s.data(), pl.data(), pl.size());
+
+		std::cout << "Received " << s << "\n";
 	}
 };
 
@@ -72,12 +87,12 @@ void main()
 	bool key[3] = { 0,0,0 };
 	bool oldKey[3] = { 0,0,0 };
 
-	CustomUDPSender sender("127.0.0.1", 50000);
-
+	CustomUDPSender sender;
+	sender.StartListening(50001);
 	bool quittime = false;
 	while (!quittime)
 	{
-
+		sender.Update(true);
 		if (GetForegroundWindow() == GetConsoleWindow())
 		{
 			key[0] = GetAsyncKeyState('1') & 0x8000;
@@ -98,7 +113,7 @@ void main()
 			m << t << t << t << t;
 
 			//c.Ping();
-			sender.SendData(MessageType::Text, (uint8_t*)m.str().data(), m.str().size() * sizeof(char));
+			sender.SendData(MessageType::Text, (uint8_t*)m.str().data(), m.str().size() * sizeof(char), "127.0.0.1", 50000);
 		}
 
 		//if (key[1] && !oldKey[1])
@@ -146,7 +161,6 @@ void main()
 		//	std::cout << "Server down, bye\n";
 		//	quittime = true;
 		//}
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 
 }

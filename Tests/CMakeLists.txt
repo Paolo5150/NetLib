@@ -3,7 +3,7 @@
 #
 
 # Add source to this project's executable.
-add_executable (Tests   "Tests.cpp" "TestUDPPacket.h" "Common.h" "TestUDPPacketAssembler.h" "TestUDPReceiver.h")
+add_executable (Tests   "Tests.cpp" "TestUDPPacket.h" "Common.h" "TestUDPPacketAssembler.h" "TestUDPMessager.h")
 
 target_include_directories(Tests PRIVATE "${CMAKE_SOURCE_DIR}/NetLib/include")
 

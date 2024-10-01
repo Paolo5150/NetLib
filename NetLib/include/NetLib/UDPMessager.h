@@ -7,33 +7,18 @@
 //#define ENABLE_COUT
 
 template<class T>
-class UDPReceiver
+class UDPMessager
 {
 public:
-	UDPReceiver(uint16_t port, bool automaticallyStartReceiving = true) :
-		m_socket(asio::ip::udp::socket(m_context, asio::ip::udp::v4()))
+	UDPMessager() :
+		m_socket(asio::ip::udp::socket(m_context, asio::ip::udp::v4())),
+		m_work_guard(asio::make_work_guard(m_context))
 
 	{
-		try
-		{
-			m_socket.bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), port));
-			m_contextThread = std::thread([this]() {m_context.run(); });
-			if(automaticallyStartReceiving)
-				Receive();
-		}
-		catch (std::exception& e)
-		{
-#ifdef ENABLE_COUT
-			std::cout << "Error creating UDP Receiver: " << e.what();
-#endif
-
-		}
+		m_contextThread = std::thread([this]() {m_context.run(); });
 	}
 
-
-
-
-	~UDPReceiver()
+	~UDPMessager()
 	{
 		if (m_socket.is_open())
 			m_socket.close();
@@ -44,12 +29,53 @@ public:
 		}
 	}
 
+	void Send(const NetMessage<T>& msg, const std::string& sendToAddress, uint32_t port)
+	{
+		try
+		{
+			asio::post(m_context, [this, msg, sendToAddress, port]() {
+				asio::ip::udp::resolver res(m_context);
+
+				m_endpoint = *res.resolve(asio::ip::udp::v4(), sendToAddress, std::to_string(port)).begin();
+				bool isWriting = !m_outMessages.Empty();
+				m_outMessages.PushBack(msg);
+
+				if (!isWriting)
+					WriteSocket();
+				});
+		}
+		catch (std::exception& e)
+		{
+			std::cout << "Somethow failed to send " << e.what();
+		}
+
+	}
+
+	void StartListening(uint32_t port)
+	{
+		try
+		{
+			m_socket.bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), port));
+			Receive();
+		}
+		catch (std::exception& e)
+		{
+#ifdef ENABLE_COUT
+			std::cout << "Error creating UDP Receiver: " << e.what();
+#endif
+
+		}
+	}
+
 	/**
 	* To be called by inheriting class, in a loop, to process available messages
 	*/
-	void Update(size_t maxMessages = -1)
+	void Update(bool nonBlocking = false, size_t maxMessages = -1 )
 	{
-		m_inMessages.Wait(); //Unblocked when the queue has something in it, or when calling ForceWake
+		if (!nonBlocking)
+		{
+			m_inMessages.Wait(); //Unblocked when the queue has something in it, or when calling ForceWake
+		}
 
 		size_t messageCount = 0;
 		while (messageCount < maxMessages && !m_inMessages.Empty())
@@ -63,7 +89,6 @@ public:
 		std::unique_lock<std::mutex> l(m_disonnectListMutex);
 		for (auto& s : m_disconnections)
 			OnDisconnection(s);
-
 	}
 
 	/**
@@ -171,37 +196,7 @@ public:
 		return sender != m_packetMap.end();
 	}
 
-	/**
-	* Receive: Start asynchronous receiving of UDP packets.
-	* It recursively calls itself to continue receiving packets indefinitely.
-	*/
-	void Receive()
-	{
-		if (m_socket.is_open())
-		{
-			m_socket.async_receive_from(asio::buffer(m_receiveBuffer, MTULimit), senderPoint,
-				[this](std::error_code ec, std::size_t bytesRead) {
-
-					CheckInactiveEndpoints();
-					CheckIncompleteMessages();
-
-					if (!ec)
-					{
-						if (bytesRead > 0)
-							ProcessPacket(senderPoint, bytesRead);
-
-						Receive();
-					}
-					else
-					{
-#ifdef ENABLE_COUT
-						std::cout << "[UDP Receiver]: Failed to Got: " << ec.message() << "\n";
-#endif
-					}
-
-				});
-		}
-	}
+	
 
 protected:
 	struct PacketInfo
@@ -307,9 +302,79 @@ private:
 	asio::ip::udp::socket m_socket;  // UDP socket for communication.
 	asio::ip::udp::endpoint senderPoint;  // Endpoint that stores the sender's information.
 	UDPPacketAssembler<T> m_packetAssembler;  // Assembler to reconstruct messages from packets.
-	TSQueue<OwnedUDPMessage<T>> m_inMessages;  // Thread-safe queue to store incoming messages.
 	uint32_t m_dropMessageThresholdMills = 500;  // Time threshold to drop incomplete messages (in milliseconds).
 	uint32_t m_disconnectEndpointThresholdMills = 30000;  // Time threshold to remove an inactive endpoint from the map (disconnection.
 	std::mutex m_disonnectListMutex;
 	std::vector<std::string> m_disconnections;
+	UDPPacket<T> m_outPacket;
+	std::vector<UDPPacket<T>> m_packets; //Local cache 
+
+	TSQueue<OwnedUDPMessage<T>> m_inMessages;  // Thread-safe queue to store incoming messages.
+	TSQueue<NetMessage<T>> m_outMessages;
+	asio::ip::udp::endpoint m_endpoint;
+	asio::executor_work_guard<asio::io_context::executor_type> m_work_guard;
+
+
+	/**
+	* Receive: Start asynchronous receiving of UDP packets.
+	* It recursively calls itself to continue receiving packets indefinitely.
+	*/
+	void Receive()
+	{
+		if (m_socket.is_open())
+		{
+			m_socket.async_receive_from(asio::buffer(m_receiveBuffer, MTULimit), senderPoint,
+				[this](std::error_code ec, std::size_t bytesRead) {
+
+					CheckInactiveEndpoints();
+					CheckIncompleteMessages();
+
+					if (!ec)
+					{
+						if (bytesRead > 0)
+							ProcessPacket(senderPoint, bytesRead);
+
+						Receive();
+					}
+					else
+					{
+#ifdef ENABLE_COUT
+						std::cout << "[UDP Receiver]: Failed to Got: " << ec.message() << "\n";
+#endif
+					}
+
+				});
+		}
+	}
+
+	void WriteSocket()
+	{
+		if (m_outMessages.Empty()) return;
+
+		auto& msg = m_outMessages.PopFront();
+		m_packets = m_packetAssembler.CreatePackets(msg);
+		auto packetCounts = m_packets.size();
+
+		for (auto& p : m_packets)
+		{
+			m_socket.async_send_to(asio::buffer(p.DataBuffer, p.DataBuffer.size()), m_endpoint,
+				[this, packetCounts](std::error_code ec, std::size_t bytes_sent) mutable {
+
+					if (!ec)
+					{
+						//std::cout << "[UDP Sender]: Sent: " << bytes_sent << "\n";
+						packetCounts--;
+						if (packetCounts == 0)
+						{
+							WriteSocket();
+						}
+					}
+					else
+					{
+						//std::cout << "[UDP Sender]: Failed to send: " << ec.message() << "\n";
+					}
+				});
+		}
+	}
+
 };

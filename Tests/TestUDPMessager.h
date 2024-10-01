@@ -1,15 +1,14 @@
 #pragma once
-#include "NetLib/UDPReceiver.h"
+#include "NetLib/UDPMessager.h"
 #include "NetLib/UDPPacketAssembler.h"
 #include "Common.h"
 #include <string>
 #include <random>
 
-class MockUDPReceiver : public UDPReceiver<MessageType>
+class MockUDPMessager : public UDPMessager<MessageType>
 {
 public:
-	MockUDPReceiver(uint16_t port) :
-		UDPReceiver(port, false)
+	MockUDPMessager() : UDPMessager()
 	{
 	}
 
@@ -62,10 +61,11 @@ public:
 	uint32_t ExpectedPort;
 };
 
-void TestUDPReceiver()
+void TestUDPMessager()
 {
 	{
-		MockUDPReceiver mr(90000);
+		MockUDPMessager mr;
+		mr.StartListening(90000);
 		asio::ip::udp::endpoint ep(asio::ip::address::from_string("127.0.0.1"), 12345);
 		mr.ExpectedSenderID = "127.0.0.1";
 		mr.ExpectedPort = 12345;
@@ -87,7 +87,9 @@ void TestUDPReceiver()
 	
 	//Dropped packets
 	{
-		MockUDPReceiver mr(90000);
+		MockUDPMessager mr;
+		mr.StartListening(90000);
+
 		asio::ip::udp::endpoint ep(asio::ip::address::from_string("127.0.0.1"), 12345);
 		mr.ExpectedSenderID = "127.0.0.1";
 		mr.ExpectedPort = 12345;
@@ -122,7 +124,8 @@ void TestUDPReceiver()
 	
 	//Out of order packets
 	{
-		MockUDPReceiver mr(90000);
+		MockUDPMessager mr;
+		mr.StartListening(90000);
 		asio::ip::udp::endpoint ep(asio::ip::address::from_string("127.0.0.1"), 12345);
 		mr.ExpectedSenderID = "127.0.0.1";
 		mr.ExpectedPort = 12345;
@@ -159,7 +162,8 @@ void TestUDPReceiver()
 	}
 	
 	{
-		MockUDPReceiver mr(90000);
+		MockUDPMessager mr;
+		mr.StartListening(90000);
 		asio::ip::udp::endpoint ep1(asio::ip::address::from_string("192.168.1.1"), 12345);
 		asio::ip::udp::endpoint ep2(asio::ip::address::from_string("10.0.0.1"), 12346);
 		asio::ip::udp::endpoint ep3(asio::ip::address::from_string("172.16.0.1"), 12347);
@@ -189,17 +193,17 @@ void TestUDPReceiver()
 		mr.ExpectedSenderID = "192.168.1.1";
 		mr.ExpectedPort = 12345;
 	
-		mr.Update(1);
+		mr.Update(false, 1);
 		mr.ExpectedMessage = message2;
 		mr.ExpectedSenderID = "10.0.0.1";
 		mr.ExpectedPort = 12346;
 	
-		mr.Update(1);
+		mr.Update(false, 1);
 		mr.ExpectedMessage = message3;
 		mr.ExpectedSenderID = "172.16.0.1";
 		mr.ExpectedPort = 12347;
 	
-		mr.Update(1);
+		mr.Update(false, 1);
 	
 		asio::ip::udp::endpoint ep4(asio::ip::address::from_string("122.16.0.1"), 12347);
 	
@@ -215,7 +219,8 @@ void TestUDPReceiver()
 	}
 
 	{
-		MockUDPReceiver mr(90000);
+		MockUDPMessager mr;
+		mr.StartListening(90000);
 		asio::ip::udp::endpoint ep1(asio::ip::address::from_string("192.168.1.1"), 12345);
 		asio::ip::udp::endpoint ep2(asio::ip::address::from_string("10.0.0.1"), 12346);
 		asio::ip::udp::endpoint ep3(asio::ip::address::from_string("172.16.0.1"), 12347);
@@ -261,17 +266,17 @@ void TestUDPReceiver()
 		mr.ExpectedMessage = message1;
 		mr.ExpectedSenderID = "192.168.1.1";
 		mr.ExpectedPort = 12345;
-		mr.Update(1);  // Process message from sender 1
+		mr.Update(false, 1);  // Process message from sender 1
 
 		mr.ExpectedMessage = message2;
 		mr.ExpectedSenderID = "10.0.0.1";
 		mr.ExpectedPort = 12346;
-		mr.Update(1);  // Process message from sender 2
+		mr.Update(false, 1);  // Process message from sender 2
 
 		mr.ExpectedMessage = message3;
 		mr.ExpectedSenderID = "172.16.0.1";
 		mr.ExpectedPort = 12347;
-		mr.Update(1);  // Process message from sender 3
+		mr.Update(false, 1);  // Process message from sender 3
 
 		//Test automatic disconnection
 		//Send from ep1, but not ep1 and ep3, which should be removed after time threshold
@@ -291,7 +296,7 @@ void TestUDPReceiver()
 		std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep1);
 		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep2);
-		mr.Update(0); //Pass 0, so we don't actually receive a message callback, we only want to trigger the disconnection callback
+		mr.Update(false, 0); //Pass 0, so we don't actually receive a message callback, we only want to trigger the disconnection callback
 
 		assert(mr.HasEndpoint(ep1));
 		assert(mr.HasEndpoint(ep2));
