@@ -17,20 +17,27 @@ public:
 
 	}
 
-	bool OnClientConnection(std::shared_ptr <TCPServerClientConnection<MessageType>> client, uint32_t assignedID) override
+	bool OnClientConnection(std::shared_ptr <TCPConnection<MessageType>> client, uint32_t assignedID) override
 	{
 		std::cout << "Client ID " << assignedID << " Connected\n";
 		return true;
 	}
 
-	void OnClientDisconnection(std::shared_ptr < TCPServerClientConnection<MessageType>> client) override
+	void OnClientDisconnection(std::shared_ptr < TCPConnection<MessageType>> client) override
 	{
 		std::cout << "Client ID " << client->GetID() << " disconnected\n";
 
 	}
 
+	bool OnIOError(std::shared_ptr<TCPConnection<MessageType>> client, std::error_code ec) override
+	{
+		std::cout << "Client ID " << client->GetID() << " error" << ec.message() << "\n";
+		return true;
+	}
+
+
 	
-	void OnMessage(std::shared_ptr<TCPServerClientConnection<MessageType>> client, const NetMessage<MessageType>& msg)
+	void OnMessage(std::shared_ptr<TCPConnection<MessageType>> client, const NetMessage<MessageType>& msg)
 	{
 		switch (msg.GetMessageID())
 		{

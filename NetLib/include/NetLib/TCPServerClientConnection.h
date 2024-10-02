@@ -6,7 +6,7 @@
 #include <functional>
 
 template <class T>
-class TCPServerClientConnection : public TCPConnection<T>,  public std::enable_shared_from_this<TCPServerClientConnection<T>>
+class TCPServerClientConnection : public TCPConnection<T>
 {
 public:
 
@@ -19,13 +19,15 @@ public:
 
 	virtual ~TCPServerClientConnection() 
 	{
+		std::cout << "TCPServerClientConnection NUKED!\n";
 	}
 
-	void ConnectToClient(uint32_t id)
+	void ConnectToClient(uint32_t id, const std::function<void(std::shared_ptr<TCPConnection<T>>, std::error_code)>& onError)
 	{
 		if (m_socket.is_open())
 		{
 			m_id = id;
+			m_onError = onError;
 			ReadHeader();
 		}
 	}

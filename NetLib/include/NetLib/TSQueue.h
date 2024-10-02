@@ -79,13 +79,17 @@ public:
 		std::unique_lock<std::mutex> l(m_waitMtx);
 		m_cv.wait(l, [this]() {
 
-			return !Empty(); 
+			return m_forceWake.load() || !Empty();
 			});
+
+		m_forceWake.store(false);
+
 	}
 
 	void ForceWake()
 	{
-		std::unique_lock<std::mutex> l2(m_waitMtx);
+		m_forceWake.store(true);
+		std::unique_lock<std::mutex> l(m_waitMtx);
 		m_cv.notify_one();
 
 	}
@@ -96,5 +100,7 @@ private:
 
 	std::condition_variable m_cv;
 	std::mutex m_waitMtx;
+
+	std::atomic<bool> m_forceWake = false;
 
 };

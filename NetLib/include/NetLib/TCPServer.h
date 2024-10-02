@@ -2,6 +2,14 @@
 #include "NetMessage.h"
 #include "TSQueue.h"
 #include "TCPServerClientConnection.h"
+#include <functional>
+
+template<class T>
+struct ErrorInfo
+{
+	std::shared_ptr<TCPConnection<T>> Client;
+	std::error_code ErrorCode;
+};
 
 template<class T>
 class TCPServer
@@ -31,7 +39,7 @@ public:
 			return false;
 		}
 
-		std::cout << "[Server] Started!\n";
+		std::cout << "[Server] Started ! " << GetCurrentThreadId()<<"\n";
 		return true;
 	}
 
@@ -94,6 +102,19 @@ public:
 			OnMessage(msg.Remote, msg.TheMessage);
 			messageCount++;
 		}
+
+		std::unique_lock<std::mutex> l(m_errorCallbackMutex);
+		for (auto& error : m_errors)
+			if (OnIOError(error.Client, error.ErrorCode))
+			{
+				OnClientDisconnection(error.Client);
+				m_connections.erase(std::remove(m_connections.begin(), m_connections.end(), error.Client), m_connections.end());
+				error.Client.reset();
+			}
+			
+
+		m_errors.clear();
+
 	}
 
 protected:
@@ -103,7 +124,7 @@ protected:
 	* @param client The pointer to the client connection
 	* @param assigned ID The artificial ID assigned to the client, should the connection be accepted
 	*/
-	virtual bool OnClientConnection(std::shared_ptr <TCPServerClientConnection<T>> client, uint32_t assignedID)
+	virtual bool OnClientConnection(std::shared_ptr <TCPConnection<T>> client, uint32_t assignedID)
 	{
 		return false;
 	}
@@ -113,7 +134,7 @@ protected:
 	* @param client The pointer to the client connection
 	* @param assigned ID The artificial ID assigned to the client, should the connection be accepted
 	*/
-	virtual void OnClientDisconnection(std::shared_ptr <TCPServerClientConnection<T>> client)
+	virtual void OnClientDisconnection(std::shared_ptr <TCPConnection<T>> client)
 	{
 	}
 
@@ -122,9 +143,18 @@ protected:
 	* @param client The client sending the message
 	* @param msg The message
 	*/
-	virtual void OnMessage(std::shared_ptr<TCPServerClientConnection<T>> client, const NetMessage<T>& msg)
+	virtual void OnMessage(std::shared_ptr<TCPConnection<T>> client, const NetMessage<T>& msg)
 	{
 
+	}
+
+	/**
+	* Invoked when a read/write message occur.
+	* Return true to disconnect the client throwing the error
+	*/
+	virtual bool OnIOError(std::shared_ptr<TCPConnection<T>> client, std::error_code ec)
+	{
+		return true;
 	}
 private:
 
@@ -134,6 +164,22 @@ private:
 	std::thread m_contextThread;
 	asio::ip::tcp::acceptor m_asioAcceptor;
 	uint32_t m_clientIDCounter = 0;
+
+	std::mutex m_errorCallbackMutex;
+	std::vector <ErrorInfo<T>> m_errors;
+
+	//Callback from connection, run on context thread!
+	void OnError(std::shared_ptr<TCPConnection<T>> client, std::error_code ec)
+	{
+		{
+			std::unique_lock<std::mutex> l(m_errorCallbackMutex);
+			m_errors.push_back({ client, ec });
+		}
+		
+		m_inMessages.ForceWake(); //Force update cycle
+		std::cout << "On error called on thread " << GetCurrentThreadId() << "\n";
+	}
+
 	void WaitForConnection()
 	{
 		std::cout << "[Server] Waiting for connection:...\n";
@@ -147,7 +193,7 @@ private:
 				if (OnClientConnection(neWcon, m_clientIDCounter))
 				{
 					m_connections.push_back(std::move(neWcon));
-					m_connections.back()->ConnectToClient(m_clientIDCounter);
+					m_connections.back()->ConnectToClient(m_clientIDCounter, std::bind(&TCPServer::OnError, this, std::placeholders::_1, std::placeholders::_2));
 					m_clientIDCounter++;
 					std::cout << "[Server] Connection approved by server\n";
 				}

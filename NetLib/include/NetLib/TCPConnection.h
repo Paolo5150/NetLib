@@ -3,9 +3,9 @@
 #include "NetMessage.h"
 #include "TSQueue.h"
 #include <functional>
-
+#include <windows.h>
 template <class T>
-class TCPConnection
+class TCPConnection : public std::enable_shared_from_this<TCPConnection<T>>
 {
 public:
 
@@ -61,6 +61,8 @@ protected:
 	NetMessage<T> m_temporaryInMsg;
 	uint32_t m_id = 0;
 
+	std::function<void(std::shared_ptr<TCPConnection<T>>, std::error_code)> m_onError;
+
 	void ReadHeader()
 	{
 		asio::async_read(m_socket, asio::buffer(&m_temporaryInMsg.Header, sizeof(NetMessageHeader<T>)),
@@ -79,7 +81,9 @@ protected:
 				else
 				{
 					std::cout << "Read header failed! ID: " << m_id << " " << ec.value() << " " << ec.message() << "\n";
-					m_socket.close();
+					if (m_onError)
+						m_onError(this->shared_from_this(), ec);
+					//m_socket.close();
 				}
 			});
 	}
@@ -95,6 +99,8 @@ private:
 				else
 				{
 					std::cout << "[" << m_id << "] Read Body Fail.\n";
+					if (m_onError)
+						m_onError(this->shared_from_this(), ec);
 					m_socket.close();
 				}
 					
@@ -127,6 +133,8 @@ private:
 				{
 					// As above!
 					std::cout << "Write header failed! ID: " << m_id << "\n";
+					if (m_onError)
+						m_onError(this->shared_from_this(), ec);
 					m_socket.close();
 				}
 			});
@@ -152,6 +160,8 @@ private:
 				{
 					// Sending failed, see WriteHeader() equivalent for description :P
 					std::cout << "Write body failed! ID: " << m_id << "\n";
+					if (m_onError)
+						m_onError(this->shared_from_this(), ec);
 					m_socket.close();
 				}
 			});

@@ -68,7 +68,7 @@ struct TCPServerClientConnection;
 template<typename T>
 struct OwnedTCPMessage
 {
-	std::shared_ptr<TCPServerClientConnection<T>> Remote = nullptr;
+	std::shared_ptr<TCPConnection<T>> Remote = nullptr;
 	NetMessage<T> TheMessage;
 
 	friend std::ostream& operator <<(std::ostream& os, const OwnedTCPMessage<T>& msg)
