@@ -35,8 +35,6 @@ public:
 		return true;
 	}
 
-
-	
 	void OnMessage(std::shared_ptr<TCPConnection<MessageType>> client, const NetMessage<MessageType>& msg)
 	{
 		switch (msg.GetMessageID())

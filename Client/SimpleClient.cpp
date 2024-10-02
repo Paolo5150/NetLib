@@ -14,6 +14,10 @@ enum class MessageType : uint32_t
 class Customclient : public TCPClient<MessageType>
 {
 public:
+	Customclient()
+	{
+		std::cout << "Client on " << GetCurrentThreadId() << "\n";
+	}
 	void Ping()
 	{
 		std::cout << "Pinging server\n";
@@ -36,7 +40,7 @@ public:
 
 	void OnConnectionSuccessful() override
 	{
-		std::cout << "Custom client, connection ok\n";
+		std::cout << "Custom client, connection ok " << GetCurrentThreadId() << "\n";
 	}
 
 	void OnConnectionFail() override

@@ -20,24 +20,19 @@ public:
 	virtual ~TCPClientServerConnection() {
 	}
 
-	void ConnectToServerAsync(const asio::ip::tcp::resolver::results_type& endpoints,
-		const std::function<void()>& onSuccess,
-		const std::function<void()>& onFail
-	)
+	void ConnectToServerAsync(const asio::ip::tcp::resolver::results_type& endpoints)
 	{
-		asio::async_connect(m_socket, endpoints, [this, onSuccess, onFail](std::error_code ec, asio::ip::tcp::endpoint endpoint) {
+		asio::async_connect(m_socket, endpoints, [this](std::error_code ec, asio::ip::tcp::endpoint endpoint) {
 
 			if (!ec)
 			{
-				if (onSuccess)
-					onSuccess();
+
 				ReadHeader();
 			}
 			else
 			{
 				std::cout << "[Client] Failed to connect to server: " << ec.message() << std::endl;
-				if (onFail)
-					onFail();
+
 			}
 			});
 

@@ -38,18 +38,15 @@ public:
 				asio::ip::tcp::socket(m_context),
 				m_inMessages);
 
-			m_connection->ConnectToServerAsync(endpoints, 	
-				[this]() {	OnConnectionSuccessful();},
-				[this]() {OnConnectionFail();}
-				);
+			m_connection->ConnectToServerAsync(endpoints);
 			m_contextThread = std::thread([this]() {m_context.run(); });
 
 		}
 		catch(std::exception& e)
 		{
 			std::cout << "[Client ERROR]: " << e.what() << "\n";
-			Disconnect();
 			OnConnectionFail();
+			Disconnect();
 		}
 	}
 
