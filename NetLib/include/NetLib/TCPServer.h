@@ -117,6 +117,11 @@ protected:
 	{
 	}
 
+	/**
+	* Invoked when a new message is received.
+	* @param client The client sending the message
+	* @param msg The message
+	*/
 	virtual void OnMessage(std::shared_ptr<TCPServerClientConnection<T>> client, const NetMessage<T>& msg)
 	{
 

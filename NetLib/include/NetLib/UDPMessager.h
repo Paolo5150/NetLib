@@ -334,6 +334,9 @@ private:
 			m_socket.async_receive_from(asio::buffer(m_receiveBuffer, MTULimit), m_senderPoint,
 				[this](std::error_code ec, std::size_t bytesRead) {
 
+					//Update that this endpoint received an update
+					//there's one in ProcessPacket too, maybe not necessary, only really used for the test
+					//Won't hurt to have it anyway
 					std::string senderKey = CreateSenderKey(m_senderPoint);
 					m_endpointLastUpdate[senderKey] = std::chrono::high_resolution_clock::now();
 

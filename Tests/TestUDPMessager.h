@@ -302,8 +302,5 @@ void TestUDPMessager()
 		assert(mr.HasEndpoint(ep2));
 		assert(!mr.HasEndpoint(ep3));
 
-
 	}
-
-
 }
