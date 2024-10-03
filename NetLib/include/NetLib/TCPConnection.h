@@ -16,6 +16,8 @@ public:
 	{
 	}
 	virtual ~TCPConnection() {
+		m_isConnected.store(false);
+
 		m_socket.close();
 	}
 
@@ -23,6 +25,7 @@ public:
 	{
 		if (IsConnected())
 		{
+			m_isConnected.store(false);
 			asio::post(m_asioContext, [this]() {
 				m_socket.close();
 				});
@@ -31,7 +34,7 @@ public:
 
 	bool IsConnected()
 	{
-		return m_socket.is_open();
+		return m_isConnected.load();
 	}
 
 	void Send(const NetMessage<T>& msg)
@@ -60,6 +63,7 @@ protected:
 	TSQueue<NetMessage<T>> m_outMEssagesQ;
 	NetMessage<T> m_temporaryInMsg;
 	uint32_t m_id = 0;
+	std::atomic<bool> m_isConnected = false;
 
 	std::function<void(std::shared_ptr<TCPConnection<T>>, std::error_code)> m_onError;
 
@@ -83,7 +87,9 @@ protected:
 					std::cout << "Read header failed! ID: " << m_id << " " << ec.value() << " " << ec.message() << "\n";
 					if (m_onError)
 						m_onError(this->shared_from_this(), ec);
-					//m_socket.close();
+					m_socket.close();
+					m_isConnected.store(false);
+
 				}
 			});
 	}
@@ -101,6 +107,8 @@ private:
 					std::cout << "[" << m_id << "] Read Body Fail.\n";
 					if (m_onError)
 						m_onError(this->shared_from_this(), ec);
+
+					m_isConnected.store(false);
 					m_socket.close();
 				}
 					
@@ -135,6 +143,8 @@ private:
 					std::cout << "Write header failed! ID: " << m_id << "\n";
 					if (m_onError)
 						m_onError(this->shared_from_this(), ec);
+
+					m_isConnected.store(false);
 					m_socket.close();
 				}
 			});
@@ -162,6 +172,8 @@ private:
 					std::cout << "Write body failed! ID: " << m_id << "\n";
 					if (m_onError)
 						m_onError(this->shared_from_this(), ec);
+
+					m_isConnected.store(false);
 					m_socket.close();
 				}
 			});

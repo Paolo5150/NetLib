@@ -46,6 +46,7 @@ public:
 	void OnConnectionFail() override
 	{
 		std::cout << "Custom client, connection failed " << GetCurrentThreadId() << "\n";
+		
 	}
 
 };
@@ -85,7 +86,7 @@ public:
 void main()
 {
 	Customclient c;
-	c.Connect("127.0.0.1", 60000);
+	c.ConnectAsync("127.0.0.1", 60000);
 
 	bool key[3] = { 0,0,0 };
 	bool oldKey[3] = { 0,0,0 };
@@ -166,8 +167,28 @@ void main()
 		}
 		else
 		{
-			std::cout << "Server down, bye\n";
-			quittime = true;
+			CallbackToClient cc;
+			if (c.GetLatestConnectionCallback( cc))
+			{
+				if (cc.CType == CallbackType::ConnectionFail)
+				{
+					std::cout << "Failed to connect " << cc.Message << std::endl;
+					static int attempts = 3;
+					if (attempts > 0)
+					{
+						attempts--;
+						c.ConnectAsync("127.0.0.1", 60000);
+
+					}
+				}
+				else if (cc.CType == CallbackType::IOError)
+				{
+					std::cout << "IOError " << cc.Message << std::endl;
+					c.Destroy();
+					quittime = 1;
+				}
+				
+			}
 		}
 	}
 
