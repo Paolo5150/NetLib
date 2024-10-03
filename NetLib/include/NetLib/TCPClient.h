@@ -26,7 +26,7 @@ public:
 	* @param host The address of the server
 	* @param port The server port
 	*/
-	void Connect(const std::string& host, const uint16_t port)
+	void ConnectAsync(const std::string& host, const uint32_t port)
 	{
 		try
 		{
@@ -43,6 +43,37 @@ public:
 
 		}
 		catch(std::exception& e)
+		{
+			std::cout << "[Client ERROR]: " << e.what() << "\n";
+			OnConnectionFail();
+			Disconnect();
+		}
+	}
+
+	/**
+	* Cconnection to specified host.
+	* Upon success or failure of connection, OnConnectionSuccessful() or OnConnectionFail() are called respectively.
+	* If failure, the context is stopped and everything is automatically disconnected, client only need to deal with custom clean up.
+	* @param host The address of the server
+	* @param port The server port
+	*/
+	void Connect(const std::string& host, const uint32_t port)
+	{
+		try
+		{
+			asio::ip::tcp::resolver res(m_context);
+			auto endpoints = res.resolve(host, std::to_string(port));
+
+			m_connection = std::make_unique<TCPClientServerConnection<T>>(
+				m_context,
+				asio::ip::tcp::socket(m_context),
+				m_inMessages);
+
+			m_connection->ConnectToServer(endpoints);
+			m_contextThread = std::thread([this]() {m_context.run(); });
+
+		}
+		catch (std::exception& e)
 		{
 			std::cout << "[Client ERROR]: " << e.what() << "\n";
 			OnConnectionFail();

@@ -45,7 +45,7 @@ public:
 
 	void OnConnectionFail() override
 	{
-
+		std::cout << "Custom client, connection failed " << GetCurrentThreadId() << "\n";
 	}
 
 };

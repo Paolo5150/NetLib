@@ -35,7 +35,12 @@ public:
 
 			}
 			});
+	}
 
+	void ConnectToServer(const asio::ip::tcp::resolver::results_type& endpoints)
+	{
+		//Calling function will catch exception
+		asio::connect(m_socket, endpoints);		
 	}
 
 protected:
@@ -45,6 +50,7 @@ private:
 	void AddToIncomingMessageQueue() override
 	{
 		m_inMessagesQ.PushBack(m_temporaryInMsg);
+		std::cout << "Got message " << m_inMessagesQ.Size() << std::endl;
 		ReadHeader();
 	}
 
