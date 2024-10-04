@@ -1,3 +1,4 @@
+#pragma once
 #include <asio.hpp>
 #include "UDPPacket.h"
 #include "UDPPacketAssembler.h"
@@ -58,7 +59,13 @@ public:
 	{
 		try
 		{
+			if (!m_socket.is_open())
+			{
+				m_socket = asio::ip::udp::socket(m_context, asio::ip::udp::v4()); 
+			}
 			m_socket.bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), port));
+			Log("[UDP Messager]: Started listening ", port);
+
 			Receive();
 		}
 		catch (std::exception& e)
@@ -86,11 +93,28 @@ public:
 		}
 
 		//Notify of diconnection
-		std::unique_lock<std::mutex> l(m_disonnectListMutex);
-		for (auto& s : m_disconnections)
-			OnDisconnection(s);
+		{
+			std::unique_lock<std::mutex> l(m_disonnectListMutex);
+			for (auto& s : m_disconnections)
+				OnDisconnection(s);
 
-		m_disconnections.clear();
+			m_disconnections.clear();
+		}
+		
+		//Notify IO error
+		{
+			std::unique_lock<std::mutex> l(m_ioErrorMutex);
+			for (auto& ec : m_ioErrors)
+			{
+				if (OnIOError(ec))
+				{
+					m_socket.close();
+				}
+			}
+
+			m_ioErrors.clear();
+		}
+
 	}
 
 	/**
@@ -99,6 +123,12 @@ public:
 	*/
 	virtual void OnMessage(OwnedUDPMessage<T> msg) = 0;
 	virtual void OnDisconnection(const std::string& addressPort) = 0;
+
+	/**
+	* On Read/Write error
+	* Return true to automatically close the socket
+	*/
+	virtual bool OnIOError(std::error_code ec) = 0;
 
 	/**
 	* SetDropMessageThreshold: Set the time threshold for dropping incomplete messages.
@@ -295,8 +325,13 @@ private:
 	UDPPacketAssembler<T> m_packetAssembler;  // Assembler to reconstruct messages from packets.
 	uint32_t m_dropMessageThresholdMills = 500;  // Time threshold to drop incomplete messages (in milliseconds).
 	uint32_t m_disconnectEndpointThresholdMills = 30000;  // Time threshold to remove an inactive endpoint from the map (disconnection.
+
 	std::mutex m_disonnectListMutex;
 	std::vector<std::string> m_disconnections;
+
+	std::mutex m_ioErrorMutex;
+	std::vector<std::error_code> m_ioErrors;
+
 	UDPPacket<T> m_outPacket;
 	std::vector<UDPPacket<T>> m_packets; //Local cache 
 
@@ -340,7 +375,11 @@ private:
 					else if (ec == asio::error::operation_aborted)
 						Log("[UDP Messager]: Aborted gracefully");
 					else
+					{
 						Log("[UDP Messager]:  Failed to read ", ec.message());
+						std::unique_lock<std::mutex> l(m_ioErrorMutex);
+						m_ioErrors.push_back(ec);
+					}
 
 				});
 		}
@@ -370,6 +409,8 @@ private:
 					else
 					{
 						Log("[UDP Messager]:  Failed to send ", ec.message());
+						std::unique_lock<std::mutex> l(m_ioErrorMutex);
+						m_ioErrors.push_back(ec);
 					}
 				});
 		}

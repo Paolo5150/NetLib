@@ -3,7 +3,7 @@
 #
 
 # Add source to this project's executable.
-add_executable (Client   "SimpleClient.cpp")
+add_executable (Client   "SimpleClient.cpp" "ClientTCP.h" "ClientTCP.cpp" "ClientUDP.h" "ClientUDP.cpp")
 
 target_include_directories(Client PRIVATE "${CMAKE_SOURCE_DIR}/NetLib/include")
 

@@ -19,19 +19,19 @@ public:
 
 	bool OnClientConnection(std::shared_ptr <TCPConnection<MessageType>> client, uint32_t assignedID) override
 	{
-		std::cout << "Client ID " << assignedID << " Connected\n";
+		//std::cout << "Client ID " << assignedID << " Connected\n";
 		return true;
 	}
 
 	void OnClientDisconnection(std::shared_ptr < TCPConnection<MessageType>> client) override
 	{
-		std::cout << "Client ID " << client->GetID() << " disconnected\n";
+		//std::cout << "Client ID " << client->GetID() << " disconnected\n";
 
 	}
 
 	bool OnIOError(std::shared_ptr<TCPConnection<MessageType>> client, std::error_code ec) override
 	{
-		std::cout << "Client ID " << client->GetID() << " error" << ec.message() << "\n";
+		//std::cout << "Client ID " << client->GetID() << " error" << ec.message() << "\n";
 		return true;
 	}
 
@@ -77,6 +77,11 @@ public:
 		std::cout << "Callback of disconnection: " << addressPort << "\n";
 	}
 
+	bool OnIOError(std::error_code ec)
+	{
+		std::cout << "CustomUDPMessager IO Error " << ec.message() << "\n";
+		return true;
+	}
 
 	void OnMessage(OwnedUDPMessage<MessageType> msg) override
 	{
@@ -91,9 +96,6 @@ public:
 
 		Send(msg.TheMessage, msg.RemoteAddress, msg.RemotePort);
 	}
-
-
-
 };
 
 void main()

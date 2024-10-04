@@ -31,6 +31,7 @@ public:
 	{
 	}
 	virtual ~TCPClientServerConnection() {
+		std::cout << "Nuked client con\n";
 	}
 
 	void ConnectToServerAsync(const asio::ip::tcp::resolver::results_type& endpoints, 
@@ -38,7 +39,6 @@ public:
 		const std::function<void(std::shared_ptr<TCPConnection<T>>, std::error_code)>& onError)
 	{
 		if (m_isConnected) return;
-		Log("[Client] ConnectToServerAsync ");
 
 		asio::async_connect(m_socket, endpoints, [this, callback, onError](std::error_code ec, asio::ip::tcp::endpoint endpoint) {
 

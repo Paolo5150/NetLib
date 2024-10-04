@@ -9,7 +9,7 @@ template<class T>
 class TCPClient : std::enable_shared_from_this<TCPClient<T>>
 {
 public:
-	TCPClient() : m_socket(m_context)
+	TCPClient() 
 	{
 	}
 
@@ -27,18 +27,17 @@ public:
 	*/
 	void ConnectAsync(const std::string& host, const uint32_t port)
 	{
+		if (IsConnected()) return;
 		try
 		{
 			asio::ip::tcp::resolver res(m_context);
 			auto endpoints = res.resolve(host, std::to_string(port));
-			if(!m_connection)
-			{
-				
-				m_connection = std::make_shared<TCPClientServerConnection<T>>(
-					m_context,
-					asio::ip::tcp::socket(m_context),
-					m_inMessages);
-			}
+			m_connection.reset();
+
+			m_connection = std::make_shared<TCPClientServerConnection<T>>(
+				m_context,
+				std::move(asio::ip::tcp::socket(m_context)),
+				m_inMessages);
 
 			m_connection->ConnectToServerAsync(endpoints, 
 				std::bind(&TCPClient::ConnectionCallback, this, std::placeholders::_1), //Connection callbacks
@@ -51,6 +50,7 @@ public:
 			{
 				asio::post([this]() {m_context.restart(); m_context.run(); });
 			}
+
 
 		}
 		catch(std::exception& e)
@@ -95,15 +95,17 @@ public:
 
 	void Destroy()
 	{
+		m_context.stop();
 		if (IsConnected())
 		{
 			m_connection->Disconnect();
 			m_connection.reset();
 		}
-		if(!m_context.stopped())
-			m_context.stop();
-		if (m_contextThread->joinable())
+
+		if (m_contextThread && m_contextThread->joinable())
 			m_contextThread->join();
+
+		m_contextThread.reset();
 	}
 
 	bool IsConnected()
@@ -119,6 +121,14 @@ public:
 		if (IsConnected())
 		{
 			m_connection->Send(msg);
+		}
+	}
+
+	void Disconnect()
+	{
+		if (IsConnected())
+		{
+			m_connection->Disconnect();
 		}
 	}
 
@@ -157,7 +167,6 @@ public:
 protected:
 	asio::io_context m_context;
 	std::unique_ptr<std::thread> m_contextThread;
-	asio::ip::tcp::socket m_socket;
 	std::shared_ptr<TCPClientServerConnection<T>> m_connection;
 
 private:

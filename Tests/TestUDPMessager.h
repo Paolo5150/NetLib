@@ -39,6 +39,11 @@ public:
 		ProcessPacket(endp, size);
 	}
 
+	bool OnIOError(std::error_code ec)
+	{
+		return true;
+	}
+
 	void AssertMapSize(int size, asio::ip::udp::endpoint& endp)
 	{
 		std::string senderKey = endp.address().to_string() + ":" + std::to_string(endp.port());

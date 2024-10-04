@@ -19,7 +19,6 @@ public:
 	virtual ~TCPConnection() {
 		m_isConnected.store(false);
 
-		m_socket.close();
 	}
 
 	void Disconnect()
@@ -28,6 +27,8 @@ public:
 		{
 			m_isConnected.store(false);
 			asio::post(m_asioContext, [this]() {
+				m_socket.cancel();
+				m_socket.shutdown(asio::ip::tcp::socket::shutdown_both);
 				m_socket.close();
 				});
 		}
