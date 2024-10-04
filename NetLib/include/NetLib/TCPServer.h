@@ -3,6 +3,7 @@
 #include "TSQueue.h"
 #include "TCPServerClientConnection.h"
 #include <functional>
+#include "Log.h"
 
 template<class T>
 struct ErrorInfo
@@ -35,11 +36,12 @@ public:
 		}
 		catch (std::exception& e)
 		{
-			std::cout << "[Server] ERROR: " << e.what() << "\n";
+			Log("[Server] ERROR: ", e.what());
+
 			return false;
 		}
 
-		std::cout << "[Server] Started ! " << GetCurrentThreadId()<<"\n";
+		Log("[Server] Started!");
 		return true;
 	}
 
@@ -47,10 +49,8 @@ public:
 	{
 		m_context.stop();
 		if (m_contextThread.joinable()) m_contextThread.join();
-		std::cout << "[Server] Stopped\n";
+		Log("[Server] Stopped!");
 	}
-
-	
 
 	void MessageClient(std::shared_ptr<TCPServerClientConnection<T>> client, const NetMessage<T>& msg)
 	{
@@ -177,17 +177,16 @@ private:
 		}
 		
 		m_inMessages.ForceWake(); //Force update cycle
-		std::cout << "On error called on thread " << GetCurrentThreadId() << "\n";
 	}
 
 	void WaitForConnection()
 	{
-		std::cout << "[Server] Waiting for connection:...\n";
-
+		Log("[Server] Waiting for connection:...");
 		m_asioAcceptor.async_accept([this](std::error_code ec, asio::ip::tcp::socket socket) {
 			if (!ec)
 			{
-				std::cout << "[Server] New Connection: " << socket.remote_endpoint() << std::endl;
+				Log("[Server] New Connection: ", socket.remote_endpoint());
+
 				std::shared_ptr<TCPServerClientConnection<T>> neWcon = std::make_shared<TCPServerClientConnection<T>>(m_context, std::move(socket), m_inMessages);
 
 				if (OnClientConnection(neWcon, m_clientIDCounter))
@@ -195,14 +194,15 @@ private:
 					m_connections.push_back(std::move(neWcon));
 					m_connections.back()->ConnectToClient(m_clientIDCounter, std::bind(&TCPServer::OnError, this, std::placeholders::_1, std::placeholders::_2));
 					m_clientIDCounter++;
-					std::cout << "[Server] Connection approved by server\n";
+					Log("[Server] Connection approved by server");
 				}
 				else
-					std::cout << "[Server] Connection refused by server\n";
+					Log("[Server] Connection refused by server");
 			}
 			else
 			{
-				std::cout << "[Server] New Connection Error: " << ec.message() << std::endl;
+				Log("[Server] New Connection Error: ", ec.message());
+
 			}
 
 			WaitForConnection();

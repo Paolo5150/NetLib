@@ -38,7 +38,7 @@ public:
 		const std::function<void(std::shared_ptr<TCPConnection<T>>, std::error_code)>& onError)
 	{
 		if (m_isConnected) return;
-		std::cout << "[Client] ConnectToServerAsync "  << " " << GetCurrentThreadId() << std::endl;
+		Log("[Client] ConnectToServerAsync ");
 
 		asio::async_connect(m_socket, endpoints, [this, callback, onError](std::error_code ec, asio::ip::tcp::endpoint endpoint) {
 
@@ -54,7 +54,8 @@ public:
 			}
 			else
 			{
-				std::cout << "[Client] Failed to connect to server: " << ec.message() << " " << GetCurrentThreadId() << std::endl;
+				Log("[Client] Failed to connect to server: ", ec.message());
+
 				m_isConnected.store(false);
 				m_socket.close();
 				callback({ CallbackType::ConnectionFail, ec.message() });
@@ -75,7 +76,6 @@ private:
 	void AddToIncomingMessageQueue() override
 	{
 		m_inMessagesQ.PushBack(m_temporaryInMsg);
-		std::cout << "Got message " << m_inMessagesQ.Size() << std::endl;
 		ReadHeader();
 	}
 

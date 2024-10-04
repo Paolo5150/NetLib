@@ -4,7 +4,7 @@
 #include "TSQueue.h"
 #include "TCPClientServerConnection.h"
 #include <thread>
-
+#include "Log.h"
 template<class T>
 class TCPClient : std::enable_shared_from_this<TCPClient<T>>
 {
@@ -55,7 +55,7 @@ public:
 		}
 		catch(std::exception& e)
 		{
-			std::cout << "[Client ERROR]: " << e.what() << "\n";
+			Log("[Client ERROR]: ", e.what());
 			OnConnectionFail();
 			Destroy();
 		}
@@ -87,7 +87,7 @@ public:
 		}
 		catch (std::exception& e)
 		{
-			std::cout << "[Client ERROR]: " << e.what() << "\n";
+			Log("[Client ERROR]: ", e.what());
 			OnConnectionFail();
 			Destroy();
 		}

@@ -4,6 +4,7 @@
 #include "TSQueue.h"
 #include <functional>
 #include <windows.h>
+#include "Log.h"
 template <class T>
 class TCPConnection : public std::enable_shared_from_this<TCPConnection<T>>
 {
@@ -84,7 +85,7 @@ protected:
 				}
 				else
 				{
-					std::cout << "Read header failed! ID: " << m_id << " " << ec.value() << " " << ec.message() << "\n";
+					Log("[TCP Connection]: Error reading header ", ec.message());
 					if (m_onError)
 						m_onError(this->shared_from_this(), ec);
 					m_socket.close();
@@ -104,7 +105,7 @@ private:
 					AddToIncomingMessageQueue();
 				else
 				{
-					std::cout << "[" << m_id << "] Read Body Fail.\n";
+					Log("[TCP Connection]: Error reading body ", ec.message());
 					if (m_onError)
 						m_onError(this->shared_from_this(), ec);
 
@@ -140,7 +141,8 @@ private:
 				else
 				{
 					// As above!
-					std::cout << "Write header failed! ID: " << m_id << "\n";
+					Log("[TCP Connection]: Error writing header ", ec.message());
+
 					if (m_onError)
 						m_onError(this->shared_from_this(), ec);
 
@@ -169,7 +171,8 @@ private:
 				else
 				{
 					// Sending failed, see WriteHeader() equivalent for description :P
-					std::cout << "Write body failed! ID: " << m_id << "\n";
+					Log("[TCP Connection]: Error writing body ", ec.message());
+
 					if (m_onError)
 						m_onError(this->shared_from_this(), ec);
 

@@ -3,8 +3,7 @@
 #include "UDPPacketAssembler.h"
 #include "TSQueue.h"
 #include <unordered_map>
-
-#define ENABLE_COUT
+#include "Log.h"
 
 template<class T>
 class UDPMessager
@@ -50,7 +49,7 @@ public:
 		}
 		catch (std::exception& e)
 		{
-			std::cout << "Somethow failed to send " << e.what();
+			Log("[UDP Messager]: Failed to send ", e.what());
 		}
 
 	}
@@ -64,10 +63,7 @@ public:
 		}
 		catch (std::exception& e)
 		{
-#ifdef ENABLE_COUT
-			std::cout << "Error creating UDP Receiver: " << e.what();
-#endif
-
+			Log("[UDP Messager]: Error creating UDP Messager: ", e.what());
 		}
 	}
 
@@ -140,9 +136,7 @@ public:
 	
 				if (timeSinceUpdate > m_dropMessageThresholdMills)
 				{
-#ifdef ENABLE_COUT
-					std::cout << "Packet ID " << it->second.PacketID << " last updated " << timeSinceUpdate << ". Over threshold, will drop message\n";
-#endif
+					Log("[UDP Messager]: Packet ID ", it->second.PacketID, " last updated ", timeSinceUpdate, ". Over threshold, will drop message");
 					it = s->second.erase(it);
 				}
 				else
@@ -160,9 +154,7 @@ public:
 			double timeSinceUpdate = (double)std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second).count();
 			if (timeSinceUpdate > m_disconnectEndpointThresholdMills)
 			{
-#ifdef ENABLE_COUT
-				std::cout << it->first << " inactive for " << timeSinceUpdate << ", will be removed\n";
-#endif
+				Log("[UDP Messager]: Endpoint", it->first, " inactive for ", timeSinceUpdate, ", will be removed.");
 				{
 					std::unique_lock<std::mutex> l(m_disonnectListMutex);
 					m_disconnections.push_back(it->first);
@@ -275,12 +267,7 @@ protected:
 				sender->second[h.PacketID].LastUpdated = std::chrono::high_resolution_clock::now();
 			}
 			else
-			{
-#ifdef ENABLE_COUT
-				std::cout << "Skpping duplciate packets " << h.PacketID << " sequence " << h.PacketSequenceNumber << "\n";
-#endif
-
-			}
+				Log("[UDP Messager]: Skpping duplicate packets ", h.PacketID, " sequence ", h.PacketSequenceNumber);
 		}
 
 		if (sender->second[h.PacketID].PacketsCount == h.PacketMaxSequenceNumbers)
@@ -351,16 +338,9 @@ private:
 						Receive();
 					}
 					else if (ec == asio::error::operation_aborted)
-					{
-						std::cout << "[UDP Receiver]: Aborted gracefully\n";
-
-					}
+						Log("[UDP Messager]: Aborted gracefully");
 					else
-					{
-#ifdef ENABLE_COUT
-						std::cout << "[UDP Receiver]: Failed to Got: " << ec.message() << "\n";
-#endif
-					}
+						Log("[UDP Messager]:  Failed to read ", ec.message());
 
 				});
 		}
@@ -381,9 +361,6 @@ private:
 
 					if (!ec)
 					{
-#ifdef ENABLE_COUT
-						std::cout << "[UDP Sender]: Sent: " << bytes_sent << "\n";
-#endif
 						packetCounts--;
 						if (packetCounts == 0)
 						{
@@ -392,9 +369,7 @@ private:
 					}
 					else
 					{
-#ifdef ENABLE_COUT
-						std::cout << "[UDP Sender]: Failed to send: " << ec.message() << "\n";
-#endif
+						Log("[UDP Messager]:  Failed to send ", ec.message());
 					}
 				});
 		}

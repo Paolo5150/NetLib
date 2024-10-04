@@ -19,7 +19,6 @@ public:
 
 	virtual ~TCPServerClientConnection() 
 	{
-		std::cout << "TCPServerClientConnection NUKED!\n";
 	}
 
 	void ConnectToClient(uint32_t id, const std::function<void(std::shared_ptr<TCPConnection<T>>, std::error_code)>& onError)
@@ -43,7 +42,6 @@ private:
 		om.Remote = this->shared_from_this();
 		om.TheMessage = m_temporaryInMsg;
 		m_inMessagesQ.PushBack(om);
-		//std::cout << "Got message from " << om.Remote->GetEndpointInfo() << "\n";
 		ReadHeader();
 	}
 
