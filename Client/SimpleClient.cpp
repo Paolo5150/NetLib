@@ -58,7 +58,7 @@ public:
 	{
 	}
 
-	void SendData(MessageType id, uint8_t* data, size_t size, const std::string& sendToAddress, uint32_t port)
+	void SendData(MessageType id, uint8_t* data, uint32_t size, const std::string& sendToAddress, uint32_t port)
 	{
 		NetMessage<MessageType> msg;
 		msg.SetMessageID(id);

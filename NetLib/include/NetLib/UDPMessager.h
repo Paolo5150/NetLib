@@ -136,7 +136,7 @@ public:
 
 			for (auto it = s->second.begin(); it != s->second.end(); )
 			{
-				double timeSinceUpdate = std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second.LastUpdated).count();
+				double timeSinceUpdate = (double)std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second.LastUpdated).count();
 	
 				if (timeSinceUpdate > m_dropMessageThresholdMills)
 				{
@@ -157,7 +157,7 @@ public:
 
 		for (auto it = m_endpointLastUpdate.begin(); it != m_endpointLastUpdate.end(); )
 		{
-			double timeSinceUpdate = std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second).count();
+			double timeSinceUpdate = (double)std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second).count();
 			if (timeSinceUpdate > m_disconnectEndpointThresholdMills)
 			{
 #ifdef ENABLE_COUT
@@ -235,7 +235,7 @@ protected:
 
 	
 
-	void ProcessPacket(asio::ip::udp::endpoint& senderPoint, size_t& bytesRead)
+	void ProcessPacket(asio::ip::udp::endpoint& senderPoint, uint32_t bytesRead)
 	{
 		std::string senderKey = CreateSenderKey(senderPoint);
 		m_endpointLastUpdate[senderKey] = std::chrono::high_resolution_clock::now();
@@ -346,7 +346,7 @@ private:
 					if (!ec)
 					{
 						if (bytesRead > 0)
-							ProcessPacket(m_senderPoint, bytesRead);
+							ProcessPacket(m_senderPoint, (uint32_t)bytesRead);
 
 						Receive();
 					}

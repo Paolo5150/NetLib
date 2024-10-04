@@ -31,7 +31,7 @@ public:
 		assert(true);
 	}
 
-	void SetReceiveBuffer(uint8_t* data, size_t size, asio::ip::udp::endpoint& endp)
+	void SetReceiveBuffer(uint8_t* data, uint32_t size, asio::ip::udp::endpoint& endp)
 	{
 		std::memcpy(m_receiveBuffer, data, size);
 		CheckInactiveEndpoints();
@@ -107,14 +107,14 @@ void TestUDPMessager()
 		p3.SetHeader(MessageType::Text, 1, 0, 2);
 	
 		//Send 1st packet only
-		mr.SetReceiveBuffer(p1.DataBuffer.data(), p1.DataBuffer.size(), ep);
+		mr.SetReceiveBuffer(p1.DataBuffer.data(), (uint32_t)p1.DataBuffer.size(), ep);
 		//Message incomplete, no message in queue
 		mr.AssertInMessagesSize(0);
 		//Map should have the one incomplete message, waiting for more packets
 		mr.AssertMapSize(1, ep);
 		std::this_thread::sleep_for(std::chrono::milliseconds(600)); //Wait over threhsold limit, packets should be nuked (message in console will appear)
 		//Need to trigger another receive
-		mr.SetReceiveBuffer(p3.DataBuffer.data(), p3.DataBuffer.size(), ep);
+		mr.SetReceiveBuffer(p3.DataBuffer.data(), (uint32_t)p3.DataBuffer.size(), ep);
 	
 	
 		//Map will still be 1, because of the new unrelated packet we sent
@@ -139,7 +139,7 @@ void TestUDPMessager()
 	
 		NetMessage<MessageType> msg;
 		msg.SetMessageID(MessageType::Text);
-		msg.SetPayload(ss.str().data(), ss.str().size());
+		msg.SetPayload(ss.str().data(), (uint32_t)ss.str().size());
 	
 		auto packets = assembler.CreatePackets(msg);
 	
@@ -151,11 +151,11 @@ void TestUDPMessager()
 		packets.push_back(packets[1]);
 		packets.push_back(packets[6]);
 	
-		unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+		auto seed = static_cast<uint16_t>(std::chrono::system_clock::now().time_since_epoch().count());
 		std::shuffle(packets.begin(), packets.end(), std::default_random_engine(seed));
 	
 		for (auto& p : packets)
-			mr.SetReceiveBuffer(p.DataBuffer.data(), p.DataBuffer.size(), ep);
+			mr.SetReceiveBuffer(p.DataBuffer.data(), (uint32_t)p.DataBuffer.size(), ep);
 	
 		mr.ExpectedMessage = ss.str();
 		mr.Update(); //Will trigger OnMessage, more asserts there
@@ -177,13 +177,13 @@ void TestUDPMessager()
 		std::string message2 = "Greetings from sender 2";
 		std::string message3 = "Hi from sender 3";
 		
-		p1.SetPayload((uint8_t*)message1.data(), message1.size());
-		p2.SetPayload((uint8_t*)message2.data(), message2.size());
-		p3.SetPayload((uint8_t*)message3.data(), message3.size());
+		p1.SetPayload((uint8_t*)message1.data(),(uint32_t) message1.size());
+		p2.SetPayload((uint8_t*)message2.data(),(uint32_t) message2.size());
+		p3.SetPayload((uint8_t*)message3.data(),(uint32_t) message3.size());
 		
-		mr.SetReceiveBuffer(p1.DataBuffer.data(), p1.DataBuffer.size(), ep1);
-		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep2);
-		mr.SetReceiveBuffer(p3.DataBuffer.data(), p3.DataBuffer.size(), ep3);
+		mr.SetReceiveBuffer(p1.DataBuffer.data(), (uint32_t)p1.DataBuffer.size(), ep1);
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), (uint32_t)p2.DataBuffer.size(), ep2);
+		mr.SetReceiveBuffer(p3.DataBuffer.data(), (uint32_t)p3.DataBuffer.size(), ep3);
 		
 		mr.AssertInMessagesSize(3);
 		mr.AssertMapSize(0, ep1);
@@ -239,24 +239,24 @@ void TestUDPMessager()
 			std::string chunk = message1.substr(i, chunkSize);
 
 			// Create a packet for each fragment
-			p1.SetHeader(MessageType::Text, 0, i / payloadSize, (message1.size() + payloadSize - 1) / payloadSize);
-			p1.SetPayload((uint8_t*)chunk.data(), chunk.size());
+			p1.SetHeader(MessageType::Text, (uint16_t)0, (uint16_t)(i / payloadSize), (uint16_t)((message1.size() + payloadSize - 1) / payloadSize));
+			p1.SetPayload((uint8_t*)chunk.data(), (uint32_t)chunk.size());
 
 			// Send each packet
-			mr.SetReceiveBuffer(p1.DataBuffer.data(), p1.DataBuffer.size(), ep1);
+			mr.SetReceiveBuffer(p1.DataBuffer.data(), (uint32_t)p1.DataBuffer.size(), ep1);
 		}
 
 		// Sender 2: Single packet
 		std::string message2 = "Greetings from sender 2";
 		p2.SetHeader(MessageType::Text, 1, 0, 1); // Single packet message
-		p2.SetPayload((uint8_t*)message2.data(), message2.size());
-		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep2);
+		p2.SetPayload((uint8_t*)message2.data(), (uint32_t)message2.size());
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), (uint32_t)p2.DataBuffer.size(), ep2);
 
 		// Sender 3: Single packet
 		std::string message3 = "Hi from sender 3";
 		p3.SetHeader(MessageType::Text, 2, 0, 1); // Single packet message
-		p3.SetPayload((uint8_t*)message3.data(), message3.size());
-		mr.SetReceiveBuffer(p3.DataBuffer.data(), p3.DataBuffer.size(), ep3);
+		p3.SetPayload((uint8_t*)message3.data(), (uint32_t)message3.size());
+		mr.SetReceiveBuffer(p3.DataBuffer.data(), (uint32_t)p3.DataBuffer.size(), ep3);
 
 		// Validate the received messages
 		mr.AssertInMessagesSize(3);  // Expecting three complete messages
@@ -280,22 +280,22 @@ void TestUDPMessager()
 
 		//Test automatic disconnection
 		//Send from ep1, but not ep1 and ep3, which should be removed after time threshold
-		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep1);
-		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep2);
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), (uint32_t)p2.DataBuffer.size(), ep1);
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), (uint32_t)p2.DataBuffer.size(), ep2);
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
-		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep1);
-		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep2);
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), (uint32_t)p2.DataBuffer.size(), ep1);
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), (uint32_t)p2.DataBuffer.size(), ep2);
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep1);
-		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep2);
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), (uint32_t)p2.DataBuffer.size(), ep1);
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), (uint32_t)p2.DataBuffer.size(), ep2);
 		std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
-		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep1);
-		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep2);
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), (uint32_t)p2.DataBuffer.size(), ep1);
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), (uint32_t)p2.DataBuffer.size(), ep2);
 		std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep1);
-		mr.SetReceiveBuffer(p2.DataBuffer.data(), p2.DataBuffer.size(), ep2);
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), (uint32_t)p2.DataBuffer.size(), ep1);
+		mr.SetReceiveBuffer(p2.DataBuffer.data(), (uint32_t)p2.DataBuffer.size(), ep2);
 		mr.Update(true, 0); //Pass 0, so we don't actually receive a message callback, we only want to trigger the disconnection callback
 
 		assert(mr.HasEndpoint(ep1));

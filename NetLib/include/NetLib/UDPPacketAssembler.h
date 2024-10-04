@@ -68,7 +68,7 @@ public:
 		{
 			std::memcpy(dataStartPoint, packets[i].DataBuffer.data() + sizeof(UDPPacketHeader<T>), (packets[i].DataBuffer.size() - sizeof(UDPPacketHeader<T>)));
 			dataStartPoint += (packets[i].DataBuffer.size() - sizeof(UDPPacketHeader<T>));
-			actualSize += (packets[i].DataBuffer.size() - sizeof(UDPPacketHeader<T>));
+			actualSize += ((uint32_t)packets[i].DataBuffer.size() - sizeof(UDPPacketHeader<T>));
 		}
 
 		message.resize(actualSize);
@@ -86,8 +86,8 @@ public:
 		for (size_t i = 0; i < packets.size(); i++)
 		{
 			std::memcpy(dataStartPoint, packets[i].DataBuffer.data() + sizeof(UDPPacketHeader<T>), (packets[i].DataBuffer.size() - sizeof(UDPPacketHeader<T>)));
-			dataStartPoint += (packets[i].DataBuffer.size() - sizeof(UDPPacketHeader<T>));
-			actualSize += (packets[i].DataBuffer.size() - sizeof(UDPPacketHeader<T>));
+			dataStartPoint += ((uint32_t)packets[i].DataBuffer.size() - sizeof(UDPPacketHeader<T>));
+			actualSize += ((uint32_t)packets[i].DataBuffer.size() - sizeof(UDPPacketHeader<T>));
 		}
 
 		outPayload.resize(actualSize);

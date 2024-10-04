@@ -10,7 +10,7 @@ void TestUDPPacketAssembler()
 	auto maxSize = UDPPacket<MessageType>::GetMaxPayloadSize();
 
 	std::stringstream ss;
-	for (int i = 0; i < maxSize; i++)
+	for (uint32_t i = 0; i < maxSize; i++)
 	{
 		ss << "a";
 	}
@@ -18,7 +18,7 @@ void TestUDPPacketAssembler()
 	ss << "b";
 
 	NetMessage<MessageType> msg;
-	msg.SetPayload(ss.str().data(), ss.str().length());
+	msg.SetPayload(ss.str().data(), (uint32_t)ss.str().length());
 	msg.SetMessageID(MessageType::Text);
 
 	auto packets = assembler.CreatePackets(msg);
@@ -108,16 +108,16 @@ void TestUDPPacketAssembler3()
 
 
 	NetMessage<MessageType> msg;
-	msg.SetPayload(&origData, sizeof(int) * origData.size());
+	msg.SetPayload(&origData, sizeof(int) * (uint32_t)origData.size());
 	msg.SetMessageID(MessageType::Data);
 
 	auto packets = assembler.CreatePackets(msg);
 
 	assert(packets.size() == 274); //((100000 * 4) / 268) + 1
 
-	uint16_t maxBodySize = UDPPacket<MessageType>::GetMaxPayloadSize();
+	uint32_t maxBodySize = (uint32_t)UDPPacket<MessageType>::GetMaxPayloadSize();
 
-	uint16_t totalSize = sizeof(int) * origData.size();
+	uint32_t totalSize = sizeof(int) * (uint32_t)origData.size();
 	for (auto i = 0; i < packets.size(); i++)
 	{
 		auto h = packets[i].ExtractHeader();
@@ -134,7 +134,7 @@ void TestUDPPacketAssembler3()
 		else
 			assert(pl.size() == totalSize);
 
-		totalSize -= pl.size();
+		totalSize -= (uint32_t)pl.size();
 	}
 
 	assert(totalSize == 0);

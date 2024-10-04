@@ -13,7 +13,7 @@ void TestUDPPacket()
 			packet.SetPayload(nullptr, 0); //Should throw, as header was not set
 			assert(false);
 		}
-		catch (std::exception& e)
+		catch (std::exception e)
 		{
 			assert(true);
 		}
@@ -25,7 +25,7 @@ void TestUDPPacket()
 		assert(newH.PacketSequenceNumber == 0);
 		assert(newH.PacketMaxSequenceNumbers == 2);
 
-		packet.SetPayload((uint8_t*)msg.data(), sizeof(char) * msg.size());
+		packet.SetPayload((uint8_t*)msg.data(), sizeof(char) * (uint32_t)msg.size());
 
 		assert(packet.PacketSize == (sizeof(UDPPacketHeader<MessageType>) + (sizeof(char) * msg.size())));
 

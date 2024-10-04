@@ -52,7 +52,7 @@ public:
 			NetMessage<MessageType> newMsg;
 			newMsg.SetMessageID(MessageType::Text);
 			
-			newMsg.SetPayload((void*)t.data(), sizeof(char) * t.size());
+			newMsg.SetPayload((void*)t.data(), sizeof(char) * (uint32_t)t.size());
 			client->Send(newMsg);
 			break;
 		}

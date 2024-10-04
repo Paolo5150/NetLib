@@ -38,7 +38,7 @@ struct UDPPacket
 	{
 		DataBuffer = fullPacketData;
 		auto h = ExtractHeader();
-		PacketSize = DataBuffer.size();
+		PacketSize = (uint32_t)DataBuffer.size();
 	}
 
 	UDPPacket(uint8_t* fullPacketData, uint32_t size)
@@ -46,7 +46,7 @@ struct UDPPacket
 		DataBuffer.resize(size);
 		std::memcpy(DataBuffer.data(), fullPacketData, size);
 		auto h = ExtractHeader();
-		PacketSize = DataBuffer.size();
+		PacketSize = (uint32_t)DataBuffer.size();
 	}
 
 	UDPPacket()
@@ -54,17 +54,17 @@ struct UDPPacket
 		DataBuffer.resize(MTULimit);
 	}
 
-	static size_t GetMaxPayloadSize()
+	static uint32_t GetMaxPayloadSize()
 	{
 		return MTULimit - sizeof(UDPPacketHeader<T>) - UDPOverhead;
 	}
 
-	static size_t GetTotalHeaderSizeIncludingOverheads()
+	static uint32_t GetTotalHeaderSizeIncludingOverheads()
 	{
 		return sizeof(UDPPacketHeader<T>) + UDPOverhead;
 	}
 
-	size_t GetPayloadSize()
+	uint32_t GetPayloadSize()
 	{
 		return DataBuffer.size() - sizeof(UDPPacketHeader<T>);
 	}
@@ -96,7 +96,7 @@ struct UDPPacket
 		return pl;
 	}
 
-	void SetPayload(uint8_t* data, size_t dataSize)
+	void SetPayload(uint8_t* data, uint32_t dataSize)
 	{ 
 		if (!m_headerSet)
 			throw std::runtime_error("Header must be set first");

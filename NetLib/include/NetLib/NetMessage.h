@@ -28,9 +28,9 @@ public:
 		Header.ID = id;
 	}
 
-	size_t GetPayloadSize() const
+	uint32_t GetPayloadSize() const
 	{
-		return Payload.size();
+		return (uint32_t)Payload.size();
 	}
 
 	const std::vector<uint8_t>& GetPayload() const
@@ -49,11 +49,11 @@ public:
 		return stream;
 	}
 
-	void SetPayload(void* data, size_t dataSize)
+	void SetPayload(void* data, uint32_t dataSize)
 	{
 		Payload.resize(dataSize);
 		std::memcpy(Payload.data(), data, dataSize);
-		Header.Size = Payload.size() + sizeof(NetMessageHeader<T>);
+		Header.Size = (uint32_t)Payload.size() + (uint32_t)sizeof(NetMessageHeader<T>);
 	}
 
 private:
@@ -63,7 +63,7 @@ private:
 };
 
 template<typename T>
-struct TCPServerClientConnection;
+class TCPServerClientConnection;
 
 template<typename T>
 struct OwnedTCPMessage
