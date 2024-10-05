@@ -58,7 +58,6 @@ void ClientTCP::OnKeyPressed(int n)
 
 void ClientTCP::Tick()
 {
-
 	CallbackToClient cc;
 	if (GetLatestCallback(cc))
 	{

@@ -123,6 +123,11 @@ public:
 	* This function is called whenever a complete message is available.
 	*/
 	virtual void OnMessage(OwnedUDPMessage<T> msg) = 0;
+
+	/**
+	* When a remote endpoint hasn't sent any update for a while, it will be automatically removed from the list of active endpoints.
+	* Use SetDisconnectEndpointThreshold to determine the time threshold to used to decide whether it's time to remove such endpoint
+	*/
 	virtual void OnDisconnection(const std::string& addressPort) = 0;
 
 	/**
