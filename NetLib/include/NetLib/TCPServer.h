@@ -16,7 +16,7 @@ template<class T>
 class TCPServer
 {
 public:
-	TCPServer(uint16_t port) :
+	TCPServer(uint32_t port) :
 		m_asioAcceptor(m_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
 	{
 	}
