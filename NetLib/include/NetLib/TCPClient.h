@@ -134,14 +134,14 @@ public:
 
 	/**
 	* Invoked when using the sync connection
-	* For async connection, use GetLatestConnectionCallback
+	* For async connection, use GetLatestCallback
 	*/
 	virtual void OnConnectionSuccessful()
 	{}
 
 	/**
 	* Invoked when using the sync connection
-	* For async connection, use GetLatestConnectionCallback
+	* For async connection, use GetLatestCallback
 	*/
 	virtual void OnConnectionFail()
 	{}
