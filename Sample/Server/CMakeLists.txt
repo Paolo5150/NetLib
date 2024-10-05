@@ -9,7 +9,7 @@ target_include_directories(Server PRIVATE "${CMAKE_SOURCE_DIR}/NetLib/include")
 
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET Client PROPERTY CXX_STANDARD 17)
+  set_property(TARGET Server PROPERTY CXX_STANDARD 17)
 endif()
 
 # TODO: Add tests and install targets if needed.

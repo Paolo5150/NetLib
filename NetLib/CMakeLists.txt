@@ -11,4 +11,3 @@ add_executable (NetLib    "include/NetLib/TSQueue.h" "include/NetLib/NetMessage.
 
  set_property(TARGET NetLib PROPERTY CXX_STANDARD 17)
 
-# TODO: Add tests and install targets if needed.
