@@ -261,8 +261,6 @@ protected:
 		return false;
 	}
 
-	
-
 	void ProcessPacket(asio::ip::udp::endpoint& senderPoint, uint32_t bytesRead)
 	{
 		std::string senderKey = CreateSenderKey(senderPoint);
@@ -350,7 +348,6 @@ private:
 	std::string CreateSenderKey(asio::ip::udp::endpoint endPoint)
 	{
 		return endPoint.address().to_string() + ":" + std::to_string(endPoint.port());
-
 	}
 	/**
 	* Receive: Start asynchronous receiving of UDP packets.

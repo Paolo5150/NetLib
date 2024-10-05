@@ -11,16 +11,7 @@ endif()
 
 project ("NetLib")
 
-# Include sub-projects.
-# add_subdirectory ("NetLib")
-# target_include_directories(NetLib PRIVATE "${CMAKE_SOURCE_DIR}/Dependencies/asio/include")
-# target_include_directories(NetLib PRIVATE "${CMAKE_SOURCE_DIR}/NetLib/include")
-
 # Flatbuffers compiler
-
-
-
-
 
 # Specify where FlatBuffers is installed or built
 set(FLATBUFFERS_COMPILER "${CMAKE_SOURCE_DIR}/Sample/Flatb/flatc.exe")
@@ -44,6 +35,7 @@ foreach(schema ${FLATBUFFERS_SCHEMAS})
 
 endforeach()
 add_custom_target(CompileFlatBuffers ALL DEPENDS ${FLATBUFFERS_OUTPUT_DIR} )
+# Include sub-projects.
 
 add_subdirectory ("Sample/Client")
 target_include_directories(Client PRIVATE "${CMAKE_SOURCE_DIR}/Dependencies/asio/include")
