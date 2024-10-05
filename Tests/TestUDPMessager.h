@@ -47,7 +47,6 @@ public:
 	void AssertMapSize(int size, asio::ip::udp::endpoint& endp)
 	{
 		std::string senderKey = endp.address().to_string() + ":" + std::to_string(endp.port());
-
 		assert(m_packetMap[senderKey].size() == size);
 	}
 
@@ -68,27 +67,27 @@ public:
 
 void TestUDPMessager()
 {
-	//{
-	//	MockUDPMessager mr;
-	//	mr.StartListening(90000);
-	//	asio::ip::udp::endpoint ep(asio::ip::address::from_string("127.0.0.1"), 12345);
-	//	mr.ExpectedSenderID = "127.0.0.1";
-	//	mr.ExpectedPort = 12345;
-	//	UDPPacket<MessageType> p1;
-	//	p1.SetHeader(MessageType::Text, 0, 0, 1);
-	//
-	//	std::string message = "Hello";
-	//	p1.SetPayload((uint8_t*)message.data(), message.size());
-	//
-	//	//This emulates the Receive function, when data comes in
-	//	mr.SetReceiveBuffer(p1.DataBuffer.data(), p1.DataBuffer.size(), ep);
-	//	//Single packet, message should have been processed
-	//	mr.AssertInMessagesSize(1);
-	//	//Map should be clear, no other expected packets
-	//	mr.AssertMapSize(0, ep);
-	//	mr.ExpectedMessage = message;
-	//	mr.Update(); //Will trigger OnMessage, more asserts there
-	//}
+	{
+		MockUDPMessager mr;
+		mr.StartListening(90000);
+		asio::ip::udp::endpoint ep(asio::ip::address::from_string("127.0.0.1"), 12345);
+		mr.ExpectedSenderID = "127.0.0.1";
+		mr.ExpectedPort = 12345;
+		UDPPacket<MessageType> p1;
+		p1.SetHeader(MessageType::Text, 0, 0, 1);
+	
+		std::string message = "Hello";
+		p1.SetPayload((uint8_t*)message.data(), message.size());
+	
+		//This emulates the Receive function, when data comes in
+		mr.SetReceiveBuffer(p1.DataBuffer.data(), p1.DataBuffer.size(), ep);
+		//Single packet, message should have been processed
+		mr.AssertInMessagesSize(1);
+		//Map should be clear, no other expected packets
+		mr.AssertMapSize(0, ep);
+		mr.ExpectedMessage = message;
+		mr.Update(); //Will trigger OnMessage, more asserts there
+	}
 	
 	//Dropped packets
 	{
