@@ -2,115 +2,55 @@
 #include <NetLib/NetMessage.h>
 #include <NetLib/TCPServer.h>
 #include <NetLib/UDPMessager.h>
+#include "ServerUDP.h"
+#include "ServerTCP.h"
 
-enum class MessageType : uint32_t
-{
-	Ping,
-	Text
-};
-
-class CustomServer : public TCPServer<MessageType>
-{
-public:
-	CustomServer(uint16_t port) : TCPServer<MessageType>(port)
-	{
-
-	}
-
-	bool OnClientConnection(std::shared_ptr <TCPConnection<MessageType>> client, uint32_t assignedID) override
-	{
-		//std::cout << "Client ID " << assignedID << " Connected\n";
-		return true;
-	}
-
-	void OnClientDisconnection(std::shared_ptr < TCPConnection<MessageType>> client) override
-	{
-		//std::cout << "Client ID " << client->GetID() << " disconnected\n";
-
-	}
-
-	bool OnIOError(std::shared_ptr<TCPConnection<MessageType>> client, std::error_code ec) override
-	{
-		//std::cout << "Client ID " << client->GetID() << " error" << ec.message() << "\n";
-		return true;
-	}
-
-	void OnMessage(std::shared_ptr<TCPConnection<MessageType>> client, const NetMessage<MessageType>& msg)
-	{
-		switch (msg.GetMessageID())
-		{
-		case MessageType::Ping:
-		{
-			std::cout << "Got a ping\n";
-			client->Send(msg);
-			break;
-		}
-
-		case MessageType::Text:
-		{
-			std::string t = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n";
-			NetMessage<MessageType> newMsg;
-			newMsg.SetMessageID(MessageType::Text);
-			
-			newMsg.SetPayload((void*)t.data(), sizeof(char) * (uint32_t)t.size());
-			client->Send(newMsg);
-			break;
-		}
-		
-		default:
-			break;
-		}
-	}
-};
-
-
-class CustomUDPMessager : public UDPMessager<MessageType>
-{
-public:
-	CustomUDPMessager( ) :	UDPMessager( )
-	{
-
-	}
-
-	void OnDisconnection(const std::string& addressPort)
-	{
-		std::cout << "Callback of disconnection: " << addressPort << "\n";
-	}
-
-	bool OnIOError(std::error_code ec)
-	{
-		std::cout << "CustomUDPMessager IO Error " << ec.message() << "\n";
-		return true;
-	}
-
-	void OnMessage(OwnedUDPMessage<MessageType> msg) override
-	{
-		auto& pl = msg.TheMessage.GetPayload();
-		//Test, i know it's a string
-		std::string s;
-		s.resize(pl.size());
-		std::memcpy((void*)s.data(), pl.data(), pl.size());
-
-		std::cout << "Received " << s << "\n";
-		std::cout << "From " << msg.RemoteAddress << " " << msg.RemotePort << "\n";
-
-		Send(msg.TheMessage, msg.RemoteAddress, msg.RemotePort);
-	}
-};
 
 void main()
 {
-	CustomServer s(60000);
-	s.Start();
+	ServerTCP tcpGuy(60000);
+	tcpGuy.Start();
 
-	//CustomUDPMessager c;
-	//c.StartListening(50000);
-	while (1)
+	bool key[10] = { 0,0,0,0,0,0,0,0,0,0 };
+	bool oldKey[10] = { 0,0,0,0,0,0,0,0,0,0 };
+
+	bool quittime = false;
+	while (!quittime)
 	{
-		s.Update();
-		//c.Update();
-	}
+		if (GetForegroundWindow() == GetConsoleWindow())
+		{
+			key[0] = GetAsyncKeyState('0') & 0x8000;
+			key[1] = GetAsyncKeyState('1') & 0x8000;
+			key[2] = GetAsyncKeyState('2') & 0x8000;
+			key[3] = GetAsyncKeyState('3') & 0x8000;
+			key[4] = GetAsyncKeyState('4') & 0x8000;
+			key[5] = GetAsyncKeyState('5') & 0x8000;
+			key[6] = GetAsyncKeyState('6') & 0x8000;
+			key[7] = GetAsyncKeyState('7') & 0x8000;
+			key[8] = GetAsyncKeyState('8') & 0x8000;
+			key[9] = GetAsyncKeyState('9') & 0x8000;
+		}
 
+		if (key[0] && !oldKey[0])
+		{
+			std::cout << "Pressed 0, quitting\n";
+			quittime = true;
+			break;
+		}
+
+		for (int i = 0; i < 10; i++)
+		{
+			if (key[i] && !oldKey[i])
+			{
+				//udpGuy.OnKeyPressed(i);
+				tcpGuy.OnKeyPressed(i);
+			}
+			oldKey[i] = key[i];
+		}
+
+		tcpGuy.Tick();
+
+	}
 
 
 }

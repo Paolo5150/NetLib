@@ -1,6 +1,6 @@
 #pragma once
 
-enum class MessageType : uint32_t
+enum class MessageType
 {
 	Ping,
 	Text

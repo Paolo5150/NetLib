@@ -3,7 +3,7 @@
 #
 
 # Add source to this project's executable.
-add_executable (Server   "SimpleServer.cpp")
+add_executable (Server   "SimpleServer.cpp" "ServerTCP.h" "ServerTCP.cpp" "ServerUDP.h" "ServerUDP.cpp")
 
 target_include_directories(Server PRIVATE "${CMAKE_SOURCE_DIR}/NetLib/include")
 

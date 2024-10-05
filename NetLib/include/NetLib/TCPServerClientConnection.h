@@ -19,6 +19,7 @@ public:
 
 	virtual ~TCPServerClientConnection() 
 	{
+		Log("[TCPServerClient]: Properly nuked");
 	}
 
 	void ConnectToClient(uint32_t id, const std::function<void(std::shared_ptr<TCPConnection<T>>, std::error_code)>& onError)

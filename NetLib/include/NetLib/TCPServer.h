@@ -36,12 +36,12 @@ public:
 		}
 		catch (std::exception& e)
 		{
-			Log("[Server] ERROR: ", e.what());
+			Log("[TCPServer] ERROR: ", e.what());
 
 			return false;
 		}
 
-		Log("[Server] Started!");
+		Log("[TCPServer] Started!");
 		return true;
 	}
 
@@ -49,7 +49,7 @@ public:
 	{
 		m_context.stop();
 		if (m_contextThread.joinable()) m_contextThread.join();
-		Log("[Server] Stopped!");
+		Log("[TCPServer] Stopped!");
 	}
 
 	void MessageClient(std::shared_ptr<TCPServerClientConnection<T>> client, const NetMessage<T>& msg)
@@ -91,9 +91,12 @@ public:
 		}
 	}
 
-	void Update(size_t maxMessages = -1)
+	void Update(bool nonblocking = false, size_t maxMessages = -1)
 	{
-		m_inMessages.Wait(); //Unblocked when the queue has something in it
+		if (!nonblocking)
+		{
+			m_inMessages.Wait(); //Unblocked when the queue has something in it
+		}
 
 		size_t messageCount = 0;
 		while (messageCount < maxMessages && !m_inMessages.Empty())
@@ -181,11 +184,11 @@ private:
 
 	void WaitForConnection()
 	{
-		Log("[Server] Waiting for connection:...");
+		Log("[TCPServer] Waiting for connection:...");
 		m_asioAcceptor.async_accept([this](std::error_code ec, asio::ip::tcp::socket socket) {
 			if (!ec)
 			{
-				Log("[Server] New Connection: ", socket.remote_endpoint());
+				Log("[TCPServer] New Connection: ", socket.remote_endpoint());
 
 				std::shared_ptr<TCPServerClientConnection<T>> neWcon = std::make_shared<TCPServerClientConnection<T>>(m_context, std::move(socket), m_inMessages);
 
@@ -194,15 +197,17 @@ private:
 					m_connections.push_back(std::move(neWcon));
 					m_connections.back()->ConnectToClient(m_clientIDCounter, std::bind(&TCPServer::OnError, this, std::placeholders::_1, std::placeholders::_2));
 					m_clientIDCounter++;
-					Log("[Server] Connection approved by server");
+					Log("[TCPServer] Connection approved by server");
 				}
 				else
-					Log("[Server] Connection refused by server");
+				{
+					neWcon.reset();
+					Log("[TCPServer] Connection refused by server");
+				}
 			}
 			else
 			{
-				Log("[Server] New Connection Error: ", ec.message());
-
+				Log("[TCPServer] New Connection Error: ", ec.message());
 			}
 
 			WaitForConnection();
