@@ -5,8 +5,6 @@ ClientTCP::ClientTCP()
 	std::cout << "Client on " << GetCurrentThreadId() << "\n";
 }
 
-
-
 void ClientTCP::OnKeyPressed(int n)
 {
 	m_fbBuilder.Clear();
@@ -14,7 +12,7 @@ void ClientTCP::OnKeyPressed(int n)
 	switch (n)
 	{
 	case 1:
-		ConnectAsync("127.0.0.1", 60000);
+		ConnectAsync(SERVER_ADDRESS, SERVER_PORT);
 		break;
 	case 2:
 		Disconnect();
@@ -80,7 +78,6 @@ void ClientTCP::Tick()
 		}		
 	}
 
-
 	if (IsConnected())
 	{
 		if (!GetMessages().Empty())
@@ -96,7 +93,6 @@ void ClientTCP::Tick()
 
 				auto now = std::chrono::high_resolution_clock::now();
 				auto duration = now.time_since_epoch();
-				// Convert duration to nanoseconds and to int64_t (or uint64_t)
 				double millsNow = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
 				double timeThen = pingMsg->time();
 				double diff = (millsNow - timeThen) / 1000.0;
@@ -118,29 +114,6 @@ void ClientTCP::Tick()
 			}
 		}
 	}
-	else
-	{
-		//CallbackToClient cc;
-		//if (GetLatestConnectionCallback( cc))
-		//{
-		//	if (cc.CType == CallbackType::ConnectionFail)
-		//	{
-		//		std::cout << "Failed to connect " << cc.Message << std::endl;
-		//		static int attempts = 3;
-		//		if (attempts > 0)
-		//		{
-		//			attempts--;
-		//			ConnectAsync("127.0.0.1", 60000);
-		//
-		//		}
-		//	}
-		//	else if (cc.CType == CallbackType::IOError)
-		//	{
-		//		std::cout << "IOError " << cc.Message << std::endl;
-		//		Destroy();
-		//	}
-		//	
-		//}
-	}
+
 }
 

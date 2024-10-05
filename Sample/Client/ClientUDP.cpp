@@ -5,8 +5,6 @@ ClientUDP::ClientUDP() : UDPMessager()
 	std::cout << "Press 1 to open port\n";
 }
 
-
-
 void ClientUDP::OnDisconnection(const std::string& addressPort)
 {
 }
@@ -14,7 +12,6 @@ void ClientUDP::OnDisconnection(const std::string& addressPort)
 bool ClientUDP::OnIOError(std::error_code ec)
 {
 	return true;
-
 }
 void ClientUDP::OnMessage(OwnedUDPMessage<MessageType> msg) 
 {
@@ -34,13 +31,14 @@ void ClientUDP::OnMessage(OwnedUDPMessage<MessageType> msg)
 			double diff = (millsNow - timeThen) / 1000.0;
 			std::cout << "Ping time mills: " << diff << std::endl;
 		}
+		break;
 		case MessageType_Position:
+		{
 			auto pl = msg.TheMessage.GetPayload();
 			auto root = flatbuffers::GetRoot<Message>(pl.data());
 			auto pos = root->payload_as_TransformPosition();
 			std::cout << pos->x() << " " << pos->y() << " " << pos->z() << std::endl;
-
-			break;
+		}
 		break;
 	}
 }
@@ -72,8 +70,7 @@ void ClientUDP::OnKeyPressed(int n)
 		NetMessage<MessageType> mymsg;
 		mymsg.SetMessageID(MessageType_Ping);
 		mymsg.SetPayload(m_fbBuilder.GetBufferPointer(), m_fbBuilder.GetSize());
-		Send(mymsg, "127.0.0.1", 60000);
-
+		Send(mymsg, SERVER_ADDRESS, SERVER_PORT);
 	}
 		break;
 
@@ -89,7 +86,7 @@ void ClientUDP::OnKeyPressed(int n)
 			NetMessage<MessageType> mymsg;
 			mymsg.SetMessageID(MessageType_Position);
 			mymsg.SetPayload(m_fbBuilder.GetBufferPointer(), m_fbBuilder.GetSize());
-			Send(mymsg, "127.0.0.1", 60000);
+			Send(mymsg, SERVER_ADDRESS, SERVER_PORT);
 		}
 	}
 		break;
