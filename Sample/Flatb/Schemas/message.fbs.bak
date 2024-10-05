@@ -1,13 +1,15 @@
-enum MessageType:byte { Ping = 0, Text, Position }
+enum MessageType:int { Ping = 0,  MulticastText, Position }
   
 
 table PingMsg {
   time: double;
  }
  
- table TextMsg {
+
+  table MulticastTextMsg {
   msg: string;
  }
+ 
  
   table TransformPosition {
   x: float;
@@ -19,6 +21,7 @@ table PingMsg {
 union MessageUnion {
     PingMsg,
     TextMsg,
+	MulticastTextMsg,
     TransformPosition
 }
 

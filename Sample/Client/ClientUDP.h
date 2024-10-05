@@ -17,6 +17,9 @@ public:
 	void OnKeyPressed(int n);
 
 	void Tick();
+private:
+	flatbuffers::FlatBufferBuilder m_fbBuilder;
+
 
 
 };

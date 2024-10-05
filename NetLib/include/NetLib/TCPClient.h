@@ -153,7 +153,7 @@ public:
 	/**
 	* Returns true if a connection callback is available (success or fail)
 	*/
-	bool GetLatestConnectionCallback(CallbackToClient& cb)
+	bool GetLatestCallback(CallbackToClient& cb)
 	{
 		if (m_hasConnectionCallback)
 		{

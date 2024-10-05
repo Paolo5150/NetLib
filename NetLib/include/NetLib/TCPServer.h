@@ -70,15 +70,19 @@ public:
 		
 	}
 
-	void MessageAllClients(const NetMessage<T>& msg, std::shared_ptr<TCPServerClientConnection<T>> ignoreClient = nullptr)
+	void MessageAllClients(const NetMessage<T>& msg, std::weak_ptr<TCPConnection<T>> ignoreClient = nullptr)
 	{
 		bool foundInvalid = false;
 		for (auto& client : m_connections)
 		{
 			if (client && client->IsConnected())
 			{
-				if(client != ignoreClient)
-					client->Send(msg);
+				if (auto c = ignoreClient.lock())
+				{
+					if (client != c)
+						client->Send(msg);
+				}
+				
 			}
 			else
 			{

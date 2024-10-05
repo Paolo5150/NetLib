@@ -14,5 +14,8 @@ public:
 	void OnMessage(OwnedUDPMessage<MessageType> msg) override;
 
 	void Tick();
+
+	void OnKeyPressed(int k);
+
 };
 

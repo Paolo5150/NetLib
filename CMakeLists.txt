@@ -17,6 +17,11 @@ project ("NetLib")
 # target_include_directories(NetLib PRIVATE "${CMAKE_SOURCE_DIR}/NetLib/include")
 
 # Flatbuffers compiler
+
+
+
+
+
 # Specify where FlatBuffers is installed or built
 set(FLATBUFFERS_COMPILER "${CMAKE_SOURCE_DIR}/Sample/Flatb/flatc.exe")
 

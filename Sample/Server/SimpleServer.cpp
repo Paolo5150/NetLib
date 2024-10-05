@@ -5,11 +5,21 @@
 #include "ServerUDP.h"
 #include "ServerTCP.h"
 
+//#define USE_TCP
+#define USE_UDP
 
 void main()
 {
+#ifdef USE_TCP
+
 	ServerTCP tcpGuy(60000);
 	tcpGuy.Start();
+#endif
+
+#ifdef USE_UDP
+	ServerUDP udpGuy;
+	udpGuy.StartListening(60000);
+#endif
 
 	bool key[10] = { 0,0,0,0,0,0,0,0,0,0 };
 	bool oldKey[10] = { 0,0,0,0,0,0,0,0,0,0 };
@@ -42,13 +52,21 @@ void main()
 		{
 			if (key[i] && !oldKey[i])
 			{
-				//udpGuy.OnKeyPressed(i);
+#ifdef USE_UDP
+				udpGuy.OnKeyPressed(i);
+#endif
+#ifdef USE_TCP
 				tcpGuy.OnKeyPressed(i);
+#endif
 			}
 			oldKey[i] = key[i];
 		}
-
+#ifdef USE_TCP
 		tcpGuy.Tick();
+#endif
+#ifdef USE_UDP
+		udpGuy.Tick();
+#endif
 
 	}
 

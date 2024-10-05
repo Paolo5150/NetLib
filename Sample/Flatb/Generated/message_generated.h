@@ -16,8 +16,8 @@ static_assert(FLATBUFFERS_VERSION_MAJOR == 24 &&
 struct PingMsg;
 struct PingMsgBuilder;
 
-struct TextMsg;
-struct TextMsgBuilder;
+struct MulticastTextMsg;
+struct MulticastTextMsgBuilder;
 
 struct TransformPosition;
 struct TransformPositionBuilder;
@@ -27,7 +27,7 @@ struct MessageBuilder;
 
 enum MessageType : int32_t {
   MessageType_Ping = 0,
-  MessageType_Text = 1,
+  MessageType_MulticastText = 1,
   MessageType_Position = 2,
   MessageType_MIN = MessageType_Ping,
   MessageType_MAX = MessageType_Position
@@ -36,7 +36,7 @@ enum MessageType : int32_t {
 inline const MessageType (&EnumValuesMessageType())[3] {
   static const MessageType values[] = {
     MessageType_Ping,
-    MessageType_Text,
+    MessageType_MulticastText,
     MessageType_Position
   };
   return values;
@@ -45,7 +45,7 @@ inline const MessageType (&EnumValuesMessageType())[3] {
 inline const char * const *EnumNamesMessageType() {
   static const char * const names[4] = {
     "Ping",
-    "Text",
+    "MulticastText",
     "Position",
     nullptr
   };
@@ -61,7 +61,7 @@ inline const char *EnumNameMessageType(MessageType e) {
 enum MessageUnion : uint8_t {
   MessageUnion_NONE = 0,
   MessageUnion_PingMsg = 1,
-  MessageUnion_TextMsg = 2,
+  MessageUnion_MulticastTextMsg = 2,
   MessageUnion_TransformPosition = 3,
   MessageUnion_MIN = MessageUnion_NONE,
   MessageUnion_MAX = MessageUnion_TransformPosition
@@ -71,7 +71,7 @@ inline const MessageUnion (&EnumValuesMessageUnion())[4] {
   static const MessageUnion values[] = {
     MessageUnion_NONE,
     MessageUnion_PingMsg,
-    MessageUnion_TextMsg,
+    MessageUnion_MulticastTextMsg,
     MessageUnion_TransformPosition
   };
   return values;
@@ -81,7 +81,7 @@ inline const char * const *EnumNamesMessageUnion() {
   static const char * const names[5] = {
     "NONE",
     "PingMsg",
-    "TextMsg",
+    "MulticastTextMsg",
     "TransformPosition",
     nullptr
   };
@@ -102,8 +102,8 @@ template<> struct MessageUnionTraits<PingMsg> {
   static const MessageUnion enum_value = MessageUnion_PingMsg;
 };
 
-template<> struct MessageUnionTraits<TextMsg> {
-  static const MessageUnion enum_value = MessageUnion_TextMsg;
+template<> struct MessageUnionTraits<MulticastTextMsg> {
+  static const MessageUnion enum_value = MessageUnion_MulticastTextMsg;
 };
 
 template<> struct MessageUnionTraits<TransformPosition> {
@@ -154,8 +154,8 @@ inline ::flatbuffers::Offset<PingMsg> CreatePingMsg(
   return builder_.Finish();
 }
 
-struct TextMsg FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef TextMsgBuilder Builder;
+struct MulticastTextMsg FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef MulticastTextMsgBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_MSG = 4
   };
@@ -170,37 +170,37 @@ struct TextMsg FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   }
 };
 
-struct TextMsgBuilder {
-  typedef TextMsg Table;
+struct MulticastTextMsgBuilder {
+  typedef MulticastTextMsg Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
   void add_msg(::flatbuffers::Offset<::flatbuffers::String> msg) {
-    fbb_.AddOffset(TextMsg::VT_MSG, msg);
+    fbb_.AddOffset(MulticastTextMsg::VT_MSG, msg);
   }
-  explicit TextMsgBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit MulticastTextMsgBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::flatbuffers::Offset<TextMsg> Finish() {
+  ::flatbuffers::Offset<MulticastTextMsg> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::flatbuffers::Offset<TextMsg>(end);
+    auto o = ::flatbuffers::Offset<MulticastTextMsg>(end);
     return o;
   }
 };
 
-inline ::flatbuffers::Offset<TextMsg> CreateTextMsg(
+inline ::flatbuffers::Offset<MulticastTextMsg> CreateMulticastTextMsg(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     ::flatbuffers::Offset<::flatbuffers::String> msg = 0) {
-  TextMsgBuilder builder_(_fbb);
+  MulticastTextMsgBuilder builder_(_fbb);
   builder_.add_msg(msg);
   return builder_.Finish();
 }
 
-inline ::flatbuffers::Offset<TextMsg> CreateTextMsgDirect(
+inline ::flatbuffers::Offset<MulticastTextMsg> CreateMulticastTextMsgDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *msg = nullptr) {
   auto msg__ = msg ? _fbb.CreateString(msg) : 0;
-  return CreateTextMsg(
+  return CreateMulticastTextMsg(
       _fbb,
       msg__);
 }
@@ -282,8 +282,8 @@ struct Message FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   const PingMsg *payload_as_PingMsg() const {
     return payload_type() == MessageUnion_PingMsg ? static_cast<const PingMsg *>(payload()) : nullptr;
   }
-  const TextMsg *payload_as_TextMsg() const {
-    return payload_type() == MessageUnion_TextMsg ? static_cast<const TextMsg *>(payload()) : nullptr;
+  const MulticastTextMsg *payload_as_MulticastTextMsg() const {
+    return payload_type() == MessageUnion_MulticastTextMsg ? static_cast<const MulticastTextMsg *>(payload()) : nullptr;
   }
   const TransformPosition *payload_as_TransformPosition() const {
     return payload_type() == MessageUnion_TransformPosition ? static_cast<const TransformPosition *>(payload()) : nullptr;
@@ -301,8 +301,8 @@ template<> inline const PingMsg *Message::payload_as<PingMsg>() const {
   return payload_as_PingMsg();
 }
 
-template<> inline const TextMsg *Message::payload_as<TextMsg>() const {
-  return payload_as_TextMsg();
+template<> inline const MulticastTextMsg *Message::payload_as<MulticastTextMsg>() const {
+  return payload_as_MulticastTextMsg();
 }
 
 template<> inline const TransformPosition *Message::payload_as<TransformPosition>() const {
@@ -349,8 +349,8 @@ inline bool VerifyMessageUnion(::flatbuffers::Verifier &verifier, const void *ob
       auto ptr = reinterpret_cast<const PingMsg *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageUnion_TextMsg: {
-      auto ptr = reinterpret_cast<const TextMsg *>(obj);
+    case MessageUnion_MulticastTextMsg: {
+      auto ptr = reinterpret_cast<const MulticastTextMsg *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case MessageUnion_TransformPosition: {

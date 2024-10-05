@@ -6,16 +6,6 @@ ClientTCP::ClientTCP()
 }
 
 
-void ClientTCP::OnConnectionSuccessful() 
-{
-	std::cout << "Custom client, connection ok " << GetCurrentThreadId() << "\n";
-}
-
-void ClientTCP::OnConnectionFail() 
-{
-	std::cout << "Custom client, connection failed " << GetCurrentThreadId() << "\n";
-
-}
 
 void ClientTCP::OnKeyPressed(int n)
 {
@@ -30,7 +20,7 @@ void ClientTCP::OnKeyPressed(int n)
 		Disconnect();
 		break;
 
-	case 3:
+	case 3: //Send ping
 	{
 		auto now = std::chrono::high_resolution_clock::now();
 		auto duration = now.time_since_epoch();
@@ -49,6 +39,20 @@ void ClientTCP::OnKeyPressed(int n)
 	}
 		break;
 
+	case 4: //Send hello to all connected clients.
+	{
+		std::string hi = "Hi everyone!";
+		auto multi = CreateMulticastTextMsg(m_fbBuilder, m_fbBuilder.CreateString(hi));
+		auto msg = CreateMessage(m_fbBuilder, MessageUnion_MulticastTextMsg, multi.o);
+		m_fbBuilder.Finish(msg);
+
+		NetMessage<MessageType> mymsg;
+		mymsg.SetMessageID(MessageType_MulticastText);
+		mymsg.SetPayload(m_fbBuilder.GetBufferPointer(), m_fbBuilder.GetSize());
+		Send(mymsg);
+	}
+		break;
+
 	default:
 		break;
 	}
@@ -58,7 +62,7 @@ void ClientTCP::Tick()
 {
 
 	CallbackToClient cc;
-	if (GetLatestConnectionCallback(cc))
+	if (GetLatestCallback(cc))
 	{
 		if (cc.CType == CallbackType::ConnectionFail)
 		{
@@ -73,8 +77,7 @@ void ClientTCP::Tick()
 		{
 			std::cout << "IOError " << cc.Message << std::endl;
 			Destroy();
-		}
-		
+		}		
 	}
 
 
@@ -101,9 +104,13 @@ void ClientTCP::Tick()
 			}
 			break;
 	
-			case MessageType::MessageType_Text:
+			case MessageType::MessageType_MulticastText:
 			{
-			
+				auto pl = msg.GetPayload();
+				auto root = flatbuffers::GetRoot<Message>(pl.data());
+				auto multiMsg = root->payload_as_MulticastTextMsg();
+				auto msg = multiMsg->msg();
+				std::cout << "received multicast " << msg->c_str() << std::endl;
 			}
 			break;
 			default:

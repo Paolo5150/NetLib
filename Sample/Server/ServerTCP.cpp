@@ -53,9 +53,10 @@ void ServerTCP::OnMessage(std::weak_ptr<TCPConnection<MessageType>> client, cons
 		break;
 	}
 
-	case MessageType::MessageType_Text:
+	case MessageType::MessageType_MulticastText:
 	{
 
+		MessageAllClients(msg, client);
 		break;
 	}
 

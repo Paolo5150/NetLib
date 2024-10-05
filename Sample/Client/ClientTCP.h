@@ -11,10 +11,6 @@ class ClientTCP : public TCPClient<MessageType>
 public:
 	ClientTCP();
 
-	void OnConnectionSuccessful() override;
-
-	void OnConnectionFail() override;
-
 	void OnKeyPressed(int n);
 
 	void Tick();

@@ -43,9 +43,10 @@ public:
 				m_endpoint = *res.resolve(asio::ip::udp::v4(), sendToAddress, std::to_string(port)).begin();
 				bool isWriting = !m_outMessages.Empty();
 				m_outMessages.PushBack(msg);
-
-				if (!isWriting)
+				if (!isWriting && !m_isTransmitting)
+				{
 					WriteSocket();
+				}
 				});
 		}
 		catch (std::exception& e)
@@ -334,6 +335,7 @@ private:
 
 	UDPPacket<T> m_outPacket;
 	std::vector<UDPPacket<T>> m_packets; //Local cache 
+	std::atomic<bool> m_isTransmitting = false;
 
 	TSQueue<OwnedUDPMessage<T>> m_inMessages;  // Thread-safe queue to store incoming messages.
 	TSQueue<NetMessage<T>> m_outMessages;
@@ -388,22 +390,25 @@ private:
 	void WriteSocket()
 	{
 		if (m_outMessages.Empty()) return;
-
-		auto& msg = m_outMessages.PopFront();
+		m_isTransmitting.store(true);
+		auto msg = m_outMessages.PopFront();
 		m_packets = m_packetAssembler.CreatePackets(msg);
-		auto packetCounts = m_packets.size();
-
+		auto packetsSent = std::make_shared<std::size_t>(0);
+		auto totalPackets = m_packets.size();
 		for (auto& p : m_packets)
 		{
 			m_socket.async_send_to(asio::buffer(p.DataBuffer, p.DataBuffer.size()), m_endpoint,
-				[this, packetCounts](std::error_code ec, std::size_t bytes_sent) mutable {
-
+				[this, totalPackets, packetsSent](std::error_code ec, std::size_t bytes_sent) mutable {
+			
 					if (!ec)
 					{
-						packetCounts--;
-						if (packetCounts == 0)
+						(*packetsSent)++;
+						if (*packetsSent == totalPackets)
 						{
-							WriteSocket();
+							if (!m_outMessages.Empty())
+								WriteSocket();
+							else
+								m_isTransmitting.store(false);
 						}
 					}
 					else
