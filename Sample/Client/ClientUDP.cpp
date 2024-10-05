@@ -5,10 +5,7 @@ ClientUDP::ClientUDP() : UDPMessager()
 	std::cout << "Press 1 to open port\n";
 }
 
-void ClientUDP::SendData(MessageType id, uint8_t* data, uint32_t size, const std::string& sendToAddress, uint32_t port)
-{
 
-}
 
 void ClientUDP::OnDisconnection(const std::string& addressPort)
 {

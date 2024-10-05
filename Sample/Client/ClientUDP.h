@@ -7,8 +7,6 @@ class ClientUDP : public UDPMessager<MessageType>
 public:
 	ClientUDP();
 
-	void SendData(MessageType id, uint8_t* data, uint32_t size, const std::string& sendToAddress, uint32_t port);
-
 	void OnDisconnection(const std::string& addressPort) override;
 
 	bool OnIOError(std::error_code ec) override;
@@ -19,7 +17,5 @@ public:
 	void Tick();
 private:
 	flatbuffers::FlatBufferBuilder m_fbBuilder;
-
-
 
 };
