@@ -47,7 +47,14 @@ public:
 
 	void Stop()
 	{
-		m_context.stop();
+		asio::post([this]() {
+			m_context.stop();
+			});
+
+		for (auto c : m_connections)
+			c->Disconnect();
+
+		m_connections.clear();
 		if (m_contextThread.joinable()) m_contextThread.join();
 		Log("[TCPServer] Stopped!");
 	}

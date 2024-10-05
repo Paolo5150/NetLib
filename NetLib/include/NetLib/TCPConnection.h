@@ -89,7 +89,7 @@ protected:
 					Log("[TCP Connection]: Error reading header ", ec.message());
 					if (m_onError)
 						m_onError(this->shared_from_this(), ec);
-					m_socket.close();
+
 					m_isConnected.store(false);
 
 				}
@@ -111,7 +111,6 @@ private:
 						m_onError(this->shared_from_this(), ec);
 
 					m_isConnected.store(false);
-					m_socket.close();
 				}
 					
 			});
@@ -148,7 +147,6 @@ private:
 						m_onError(this->shared_from_this(), ec);
 
 					m_isConnected.store(false);
-					m_socket.close();
 				}
 			});
 	}
@@ -178,7 +176,6 @@ private:
 						m_onError(this->shared_from_this(), ec);
 
 					m_isConnected.store(false);
-					m_socket.close();
 				}
 			});
 	}

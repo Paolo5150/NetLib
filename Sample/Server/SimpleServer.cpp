@@ -5,8 +5,8 @@
 #include "ServerUDP.h"
 #include "ServerTCP.h"
 
-//#define USE_TCP
-#define USE_UDP
+#define USE_TCP
+//#define USE_UDP
 
 void main()
 {

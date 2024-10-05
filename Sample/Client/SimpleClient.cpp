@@ -4,8 +4,8 @@
 #include "ClientTCP.h"
 #include "ClientUDP.h"
 
-//#define USE_TCP
-#define USE_UDP
+#define USE_TCP
+//#define USE_UDP
 void main()
 {
 #ifdef USE_TCP
