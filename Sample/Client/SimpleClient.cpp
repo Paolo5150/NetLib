@@ -18,10 +18,10 @@ void main()
 	{
 		if (GetForegroundWindow() == GetConsoleWindow())
 		{
-			key[0] = GetAsyncKeyState('0') & 0x8000;
-			key[1] = GetAsyncKeyState('1') & 0x8000;
-			key[2] = GetAsyncKeyState('2') & 0x8000;
-			key[3] = GetAsyncKeyState('3') & 0x8000;
+			key[0] = GetAsyncKeyState('0') & 0x8000; //Quit
+			key[1] = GetAsyncKeyState('1') & 0x8000; //Connect
+			key[2] = GetAsyncKeyState('2') & 0x8000; //Disconnect
+			key[3] = GetAsyncKeyState('3') & 0x8000; //Send ping
 			key[4] = GetAsyncKeyState('4') & 0x8000;
 			key[5] = GetAsyncKeyState('5') & 0x8000;
 			key[6] = GetAsyncKeyState('6') & 0x8000;

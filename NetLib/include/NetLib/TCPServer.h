@@ -52,18 +52,22 @@ public:
 		Log("[TCPServer] Stopped!");
 	}
 
-	void MessageClient(std::shared_ptr<TCPServerClientConnection<T>> client, const NetMessage<T>& msg)
+	void MessageClient(std::weak_ptr<TCPConnection<T>> cl, const NetMessage<T>& msg)
 	{
-		if (client && client->IsConnected())
+		if (auto client = cl.lock())
 		{
-			client->Send(msg);
+			if (client && client->IsConnected())
+			{
+				client->Send(msg);
+			}
+			else
+			{
+				OnClientDisconnection(client);
+				client.reset();
+				m_connections.erase(std::remove(m_connections.begin(), m_connections.end(), client), m_connections.end());
+			}
 		}
-		else
-		{
-			OnClientDisconnection(client);
-			client.reset();
-			m_connections.erase(std::remove(m_connections.begin(), m_connections.end(), client), m_connections.end());
-		}
+		
 	}
 
 	void MessageAllClients(const NetMessage<T>& msg, std::shared_ptr<TCPServerClientConnection<T>> ignoreClient = nullptr)

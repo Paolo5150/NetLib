@@ -19,6 +19,8 @@ public:
 
 	virtual ~TCPServerClientConnection() 
 	{
+		m_isConnected.store(false);
+
 		Log("[TCPServerClient]: Properly nuked");
 	}
 
@@ -28,6 +30,7 @@ public:
 		{
 			m_id = id;
 			m_onError = onError;
+			m_isConnected.store(true);
 			ReadHeader();
 		}
 	}

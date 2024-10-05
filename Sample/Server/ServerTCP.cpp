@@ -1,4 +1,5 @@
 #include "ServerTCP.h"
+#include "../Common.h"
 
 ServerTCP::ServerTCP(uint16_t port) : TCPServer<MessageType>(port)
 {
@@ -45,13 +46,14 @@ void ServerTCP::OnMessage(std::weak_ptr<TCPConnection<MessageType>> client, cons
 {
 	switch (msg.GetMessageID())
 	{
-	case MessageType::Ping:
+	case MessageType::MessageType_Ping:
 	{
-
+		std::cout << "Got a ping\n";
+		MessageClient(client, msg);
 		break;
 	}
 
-	case MessageType::Text:
+	case MessageType::MessageType_Text:
 	{
 
 		break;

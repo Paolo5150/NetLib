@@ -5,6 +5,7 @@
 #include <NetLib/UDPMessager.h>
 #include "../Common.h"
 
+
 class ClientTCP : public TCPClient<MessageType>
 {
 public:
@@ -17,4 +18,7 @@ public:
 	void OnKeyPressed(int n);
 
 	void Tick();
+
+private:
+	flatbuffers::FlatBufferBuilder m_fbBuilder;
 };

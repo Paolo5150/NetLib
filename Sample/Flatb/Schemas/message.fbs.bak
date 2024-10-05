@@ -1,0 +1,31 @@
+enum MessageType:byte { Ping = 0, Text, Position }
+  
+
+table PingMsg {
+  time: double;
+ }
+ 
+ table TextMsg {
+  msg: string;
+ }
+ 
+  table TransformPosition {
+  x: float;
+  y: float;
+  z: float;
+ }
+ 
+// Define a union for different message types
+union MessageUnion {
+    PingMsg,
+    TextMsg,
+    TransformPosition
+}
+
+table Message {
+
+    payload: MessageUnion; // Payload containing the message data
+}
+ 
+
+root_type Message;
