@@ -127,7 +127,7 @@ protected:
 	* @param client The pointer to the client connection
 	* @param assigned ID The artificial ID assigned to the client, should the connection be accepted
 	*/
-	virtual bool OnClientConnection(std::shared_ptr <TCPConnection<T>> client, uint32_t assignedID)
+	virtual bool OnClientConnection(std::weak_ptr <TCPConnection<T>> client, uint32_t assignedID)
 	{
 		return false;
 	}
@@ -137,7 +137,7 @@ protected:
 	* @param client The pointer to the client connection
 	* @param assigned ID The artificial ID assigned to the client, should the connection be accepted
 	*/
-	virtual void OnClientDisconnection(std::shared_ptr <TCPConnection<T>> client)
+	virtual void OnClientDisconnection(std::weak_ptr <TCPConnection<T>> client)
 	{
 	}
 
@@ -146,7 +146,7 @@ protected:
 	* @param client The client sending the message
 	* @param msg The message
 	*/
-	virtual void OnMessage(std::shared_ptr<TCPConnection<T>> client, const NetMessage<T>& msg)
+	virtual void OnMessage(std::weak_ptr<TCPConnection<T>> client, const NetMessage<T>& msg)
 	{
 
 	}
@@ -155,7 +155,7 @@ protected:
 	* Invoked when a read/write message occur.
 	* Return true to disconnect the client throwing the error
 	*/
-	virtual bool OnIOError(std::shared_ptr<TCPConnection<T>> client, std::error_code ec)
+	virtual bool OnIOError(std::weak_ptr<TCPConnection<T>> client, std::error_code ec)
 	{
 		return true;
 	}
